@@ -32,7 +32,8 @@ Note: There are several different ways to solve these tasks, feel free to come u
 Read the cocktail dataset from: <https://github.com/nthun/cocktail-balance> You can also find the codebook there.
 
 ```{r}
-cocktail_balance <- read.table("C:/Users/qzinw/rprog/r_data_analysis_2122_fall/data/cocktail_data.tsv", header = TRUE, sep = "\t")
+cocktail_data <- read.table("C:/Users/qzinw/rprog/r_data_analysis_2122_fall/data/cocktail_data.tsv", header = TRUE, sep = "\t")
+
 # Nem tudtam kezelni a ' és # karaktereket, ezért kitöröltem őket az eredeti data fájlból.
 ```
 
@@ -41,7 +42,21 @@ cocktail_balance <- read.table("C:/Users/qzinw/rprog/r_data_analysis_2122_fall/d
 The ingredients are currently in a single cell for each cocktail. It would be better to put them in separate rows. Also, the variable should be cleaned of all quantities (e.g. 1/2 oz, 2 dashes, etc.), and the indicator of alcohol content (e.g. 47.3% abv). You will need to use this cleaned table in later tasks.
 
 ```{r}
+#Sorokra bontottam az ingredients oszlopot a <br/> mentén.
+cocktail_data <- separate_rows(cocktail_data, ingredients, sep = "<br/>", convert = FALSE)
 
+#Az oszlopok neveit az alábbi sorral lehet megnézni
+colnames(cocktail_data, do.NULL =FALSE)
+
+#Kivettem az ingredientsből az 'oz''dash/es''drop/s' és 'bps' adatokat.
+cocktail_data <- data.frame(lapply(cocktail_data, function(x) {gsub(".*oz ", "", x)}))
+cocktail_data <- data.frame(lapply(cocktail_data, function(x) {gsub(".*drop ", "", x)}))
+cocktail_data <- data.frame(lapply(cocktail_data, function(x) {gsub(".*drops ", "", x)}))
+cocktail_data <- data.frame(lapply(cocktail_data, function(x) {gsub(".*dash ", "", x)}))
+cocktail_data <- data.frame(lapply(cocktail_data, function(x) {gsub(".*dashes ", "", x)}))
+cocktail_data <- data.frame(lapply(cocktail_data, function(x) {gsub(".*bsp ", "", x)}))
+
+#Törölem a zárójeles adatokat is az ingredientsből
 ```
 
 ## 3. All ingredients in alphabetical order
