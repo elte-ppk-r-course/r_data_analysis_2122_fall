@@ -33,5 +33,69 @@ There is no dataset for this project. You have to simulate from scratch!
 
 ```{r}
 
+devtools::install_github('thomasp85/gganimate')
+install.packages("gifski")
+```
+
+```{r}
+library(ggplot2)
+library(gganimate)
+library(gifski)
+width=400
+height=400
+
+
+
+generate <- function(current_x,last_y,can_fork) {
+if (current_x == height){
+  return (data.frame(x=c(), y=c()))
+} else {
+    new_y=last_y+generate_direction()
+    if(new_y < 0){
+      new_y=0
+    }
+    if(new_y > width){
+      new_y=width
+    }
+    new_node= data.frame(x=c(current_x), y=c(new_y))
+  
+    if(can_fork){
+      will_fork=runif(1) <= 0.01
+      if(will_fork){
+        return (do.call("rbind", 
+                        list(new_node,  generate(current_x+1,new_y,TRUE),                        generate(current_x+1,new_y,FALSE))))
+      }
+    }
+    return (rbind(new_node,generate(current_x+1,new_y,can_fork)))
+}         
+}
+
+generate_direction <- function(){
+  change = 1
+  rand <- runif(1, min=0, max=101)
+  if(rand < 33){
+    return (-change)
+  }else if(rand < 66){
+    return (0)
+  }else{
+    return (change)
+  }
+}
+
+df=generate(0,width/2,TRUE)
+
+p = ggplot(data=df, aes(x=x, y=y)) +
+  geom_point(size=1,color='white') +  
+  coord_flip(ylim = c(0,height), xlim = rev(c(0, width))) +  scale_x_reverse() +
+  theme(panel.background = element_rect(fill = 'black'),legend.position = "none",
+        panel.grid = element_blank(),
+        axis.title = element_blank(),
+        axis.text = element_blank(),
+        axis.ticks = element_blank(),) +
+  transition_states(x)+
+  shadow_mark()
+
+
+animate(p, nframes = height,duration=8,  renderer = gifski_renderer("gganim.gif"))
 ```
 
