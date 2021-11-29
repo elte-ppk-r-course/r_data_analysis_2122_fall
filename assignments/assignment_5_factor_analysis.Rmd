@@ -9,6 +9,10 @@ editor_options:
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
+library(psych)
+library(MVN)
+library(GPArotation)
+library(dplyr)
 ```
 
 # Introduction
@@ -103,13 +107,14 @@ Talk about the limitations of your study and findings.
 Read the Animal Rights Scale (ARQ) dataset from the 'data/' folder. Pay attention to the extension.
 
 ```{r}
-
+ars <- read.csv("C:/Users/bertr/OneDrive/Dokumentumok/assignment_5_dataset.csv")
 ```
 
 ## EDA
 
 ```{r}
-
+describe(ars)
+dim(ars)
 ```
 
 ## Data manipulation
@@ -119,7 +124,10 @@ Recode the sex and party variables as factor type variables with the following l
   * party: 1 - democrat, 2 - republican, 3 - other, 4 - none
 
 ```{r}
-
+ars_r <- ars %>% 
+  mutate(sex = recode_factor(sex, "1" = "Male", "2"="Female")) %>% 
+  mutate(party = recode_factor(party, "1" = "democrat", "2" = "republican", "3" = "other", "4" = "none"))
+ars_r
 ```
 
 # Creating a correlation matrix
@@ -127,13 +135,14 @@ Recode the sex and party variables as factor type variables with the following l
 __Note:__ Remember to only include the variables of the questionnaire that will be part of the factor analysis.
 
 ```{r}
-
+items <- ars %>% 
+  select(starts_with("ar"))
 ```
 
 Create the correlation matrix.
 
 ```{r}
-
+correlations <- lowerCor(items)
 ```
 
 ## Visualizing the correlation matrix
@@ -141,7 +150,7 @@ Create the correlation matrix.
 Create a visualization of the results of the correlation matrix.
 
 ```{r}
-
+cor.plot(correlations, main = "Correlations between items", upper = FALSE, cex = 0.4, cex.axis = 0.35, colors = FALSE)
 ```
 
 ## Test for factorability
@@ -149,27 +158,37 @@ Create a visualization of the results of the correlation matrix.
 Calculate the KMO score.
 
 ```{r}
-
+KMO(correlations)
 ```
+Based on overall KMO, data seems appropriate for factor analysis (KMO = 0.88).
 
 ## Test for multivariate normality
 
 ```{r}
-
+mnt <- mvn(items, mvnTest = "hz")
+mnt$multivariateNormality
 ```
+Multivariate normality is not supported.
 
 Test for skewness and kurtosis.
 
 ```{r}
-
+skew_kurt <- mvn(items, mvnTest = "mardia")
+skew_kurt$multivariateNormality
 ```
+Multivariate normality is not supported.
 
 ## Create scree plot
 
 Create a scree plot to help the decision on how many factors to include.
 
 ```{r}
+scree(items, factors = FALSE)
+```
+Scree plot indicates that the recommended factor number is 6. However, parallel analysis suggests 4. I do not know why but sometimes it recommends 3. See below:
 
+```{r}
+fa.parallel(items)
 ```
 
 ## Run the factor analysis
@@ -177,50 +196,56 @@ Create a scree plot to help the decision on how many factors to include.
 Run the factor analysis with the chosen number of factors.
 
 ```{r}
-
+EFA <- fa(items, nfactors = 4, rotate= "varimax")
 ```
 
 Sort the communality scores in decreasing order.
 
 ```{r}
-
+sort(EFA$communality, decreasing = TRUE)
 ```
 
 Calculate the mean communality scores.
 
 ```{r}
-
+mean(EFA$communality)
 ```
 
 Show the factor loadings for the chosen factor structure.
 
 ```{r}
-
+EFA$loadings
 ```
 
 Visualize the factor structure.
 
 ```{r}
-
+fa.diagram(EFA)
 ```
+ar3, ar12, ar14, ar16 & ar25 items should be removed from the model, as they perform under 0.3.
+Based on the factor structure, I would suggest the followings: MR1 = animal_use,  MR2 = animal_research, MR3 = human_speciesism, MR4 = animal_lives
 
 ## Run linear regression
 
 Calculate the factor scores.
 
 ```{r}
-
+EFA$scores
 ```
 
 Bind factor scores to the original dataset.
 
 ```{r}
-
+ars <- ars %>% 
+ cbind(EFA$scores) %>%
+  rename(animal_use = MR1, animal_research = MR2, human_speciesism = MR3, animal_lives = MR4)
 ```
 
 Run the logistic regression.
 
 ```{r}
-
+lra <- lm(liberal ~ animal_use + animal_research + human_speciesism + animal_lives, data = ars)
+summary(lra)
 ```
+lra suggests that the factor of animal_lives is the most influential pedictor of liberal attitudes.
 
