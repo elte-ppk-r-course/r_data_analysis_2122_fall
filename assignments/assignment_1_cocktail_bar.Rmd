@@ -48,6 +48,9 @@ library(tidyr)
 #Sorokra bontottam az ingredients oszlopot a <br/> mentén.
 cocktail_data <- separate_rows(cocktail_data, ingredients, sep = "<br/>", convert = FALSE)
 
+#ja meg ugye van sima <br> 
+cocktail_data <- separate_rows(cocktail_data, ingredients, sep = "<br>", convert = FALSE) 
+
 #Az oszlopok neveit az alábbi sorral lehet megnézni
 colnames(cocktail_data, do.NULL =FALSE)
 
@@ -59,7 +62,9 @@ cocktail_data <- data.frame(lapply(cocktail_data, function(x) {gsub(".*dash ", "
 cocktail_data <- data.frame(lapply(cocktail_data, function(x) {gsub(".*dashes ", "", x)}))
 cocktail_data <- data.frame(lapply(cocktail_data, function(x) {gsub(".*bsp ", "", x)}))
 
-#Törölem a zárójeles adatokat is az ingredientsből
+#Töröltem a zárójeles adatokat is az ingredients-ből
+library(stringr)
+cocktail_data$ingredients <- str_remove(cocktail_data$ingredients, pattern = "\\(.*")
 ```
 
 ## 3. All ingredients in alphabetical order
@@ -67,6 +72,19 @@ cocktail_data <- data.frame(lapply(cocktail_data, function(x) {gsub(".*bsp ", ""
 Before opening the bar, you need to find a reliable supplier that has all the ingredients. You need to send a list of all possible ingredients you will need. They don't need the quantities (i.e. how many of these are needed), just the names of the ingredients.
 
 ```{r}
+library(tidyr)
+#Adattisztítás: egy sort szét kell választani az 'or' mentén
+cocktail_data <- separate_rows(cocktail_data, ingredients, sep = "or", convert = FALSE)
+
+#Adattisztítás: szóközök törlése a szavak végéről és elejéről
+cocktail_data$ingredients <- trimws(cocktail_data$ingredients, which = c("both"))
+
+#Unique, nem üres adatok azonosítása 
+cocktailunique <- unique(cocktail_data$ingredients[cocktail_data$ingredients != ""])
+
+#ABC sorend kialakítása
+sorted_ingr <- sort(cocktailunique)
+
 
 ```
 
@@ -75,6 +93,8 @@ Before opening the bar, you need to find a reliable supplier that has all the in
 How many different ingredients you will need?
 
 ```{r}
+#összegzem a sorted_ingr változót, így 60-at kapok
+summary(sorted_ingr)
 
 ```
 
@@ -83,7 +103,8 @@ How many different ingredients you will need?
 What are the 10 most frequently used ingredients? If there are ties, you can list more than 10.
 
 ```{r}
-
+#A 10 leggyakoribb, de többet lekértem, mert sok volt a döntetlen.
+top10 <- sort(table(cocktail_data$ingredients), decreasing = TRUE) [1:25]
 ```
 
 ## 6. Which cocktail(s) has/have the most ingredients?
@@ -91,7 +112,8 @@ What are the 10 most frequently used ingredients? If there are ties, you can lis
 Count the number of ingredients and filter all the cocktails that has that many.
 
 ```{r}
-
+#Mivel az összetevők soronként vannak, és egy koktélhoz így több sor is tartozik, megnéztem, hogy melyik koktél név a leggyakoribb. 6 egyformán gyakori nevet találtam.
+complex_cocktails <- sort(table(cocktail_data$name), decreasing = TRUE) [1:6]
 ```
 
 ## 7. How many ingredients appear in only one cocktail (rare ingredient)?
@@ -99,19 +121,23 @@ Count the number of ingredients and filter all the cocktails that has that many.
 Count all cocktails with only one ingredient, and
 
 ```{r}
-
+#25 rare ingredient van
+rare_ingr <- sort(table(cocktail_data$ingredients), increasing = TRUE) [1:28]
 ```
 
 ## 8. Which cocktail has an ingredient that is only used in one cocktail?
 
 ```{r}
-
+rare_cocktail <- cocktail_data %>% filter(ingredients == "absinthe"|ingredients =="Absolut Citron vodka" |ingredients =="agar-clarified grapefruit juice" |ingredients =="Amer Picon" |ingredients =="centrifuge-clarified grapefruit juice" |ingredients == "Cherry Herring" |ingredients =="cranberry juice" |ingredients =="crem de violette" |ingredients =="Demerara syrup" |ingredients =="Dolin dry vermouth" |ingredients =="Drambuie" |ingredients =="Fernet Branca" |ingredients =="heavy cream" |ingredients =="Hellfire bitters" |ingredients =="Lairds Applejack Bottled in Bond" |ingredients =="Old Tom gin" |ingredients =="pisco" |ingredients =="quinine simple syrup" |ingredients =="saline" |ingredients =="simple" |ingredients == "sloe gin" |ingredients =="sugard 80-proof rum" |ingredients =="sugared 100-proof rye" |ingredients =="white crÂŹme de cacao" |ingredients =="white mezcal" |ingredients =="ange juice" |ingredients =="apple brandy" |ingredients =="blanco tequila")
 ```
 
 ## 9. What are the cocktails without rare ingredients?
 
 ```{r}
-  
+notrare_cocktail <- cocktail_data %>% filter(ingredients != "absinthe"|ingredients !="Absolut Citron vodka" |ingredients !="agar-clarified grapefruit juice" |ingredients !="Amer Picon" |ingredients !="centrifuge-clarified grapefruit juice" |ingredients != "Cherry Herring" |ingredients !="cranberry juice" |ingredients !="crem de violette" |ingredients !="Demerara syrup" |ingredients !="Dolin dry vermouth" |ingredients !="Drambuie" |ingredients !="Fernet Branca" |ingredients !="heavy cream" |ingredients !="Hellfire bitters" |ingredients !="Lairds Applejack Bottled in Bond" |ingredients !="Old Tom gin" |ingredients !="pisco" |ingredients !="quinine simple syrup" |ingredients !="saline" |ingredients !="simple" |ingredients != "sloe gin" |ingredients !="sugard 80-proof rum" |ingredients !="sugared 100-proof rye" |ingredients !="white crÂŹme de cacao" |ingredients !="white mezcal" |ingredients !="ange juice" |ingredients !="apple brandy" |ingredients !="blanco tequila")
+
+#a végső cocktail név lista ismétlések nélkül
+notrare <- unique(notrare_cocktail$name, incomparables = FALSE)
 ```
 
 ## 10. Create a cheat sheet for the bartender!
@@ -124,6 +150,11 @@ tribble(~name, ~Lime, ~`White rum`, ~`Cane sugar`, ~`Coca-cola`, ~Mint, ~Soda,
         "Cuba Libre", "X", "X", "", "X","","",
         "Mojito", "X", "X", "", "", "X", "X") %>% 
     relocate(name, sort(names(.)))
+#Koktélok azonosítása = 55, ennyi sor kell
+unique(cocktail_data$name)
+
+#Hozzávalók azonosítása = 61, ennyi oszlop kell
+unique(cocktail_data$ingredients)
 ```
 
 ```{r}
