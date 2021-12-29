@@ -1,0 +1,57 @@
+---
+title: "assignment_1_plot_1"
+author: "Kovacs_Adel"
+date: "12/29/2021"
+output: html_document
+---
+# **1st plot of the 1st assignment**
+## PSZM21-MO-KUT-104:2	Komplex adatelemzési eljárások-Adatelemzés R-programnyelven
+```{r setup, include = TRUE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+First I have loaded the packages I am going to need (also got back here when I needed to add something)
+```{r, warning = FALSE, message = FALSE}
+library(tidytuesdayR)
+library(forcats)
+library(tidyverse)
+library(ggplot2)
+library(dplyr)
+library(tidyr)
+```
+I have loaded the data
+```{r}
+tt_data <- tt_load("2020-09-22")
+
+tt_data$expeditions
+expeditions <- tt_data$expeditions
+```
+I took a look at my data
+``` {r}
+View(expeditions)
+```
+Then I made sure the variables I need are handled as factors
+```{r}
+expeditions$season <- as.factor(expeditions$season)
+expeditions$peak_name <- as.factor(expeditions$peak_name)
+```
+I have checked the peaks
+```{r}
+fct_count(expeditions$peak_name)
+```
+Then I choosed the 15 most popular and dropped all others, to have my data ready to plot. I have also saved it as an other data frame
+```{r}
+expeditions_to_plot <- expeditions %>%
+  mutate(peak_name = fct_lump_n(peak_name, 15)) %>%
+  filter (peak_name != "Other") %>%
+  count (peak_name, season)
+```
+And lastly I have made the plot, using the given instructions
+```{r}
+ggplot(expeditions_to_plot, aes(x = n, y = reorder (peak_name, n), fill = season)) +
+  geom_col () +
+  theme_light () +
+  scale_fill_viridis_d() +
+  labs (title = "The 15 most popular peaks stacked by season of expedition", x = "Number of expeditions", y = NULL) +
+  theme (legend.position = "bottom")
+```
+
