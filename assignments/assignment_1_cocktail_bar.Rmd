@@ -1,117 +1,104 @@
 ---
-title: "Assignment 1: The cocktail bar (data transformation and manipulation)"
-author: "Tamas Nagy"
-output: html_document
-editor_options: 
-  chunk_output_type: console
+title: "Assignment1: Cocktails"
+author: Dora Czirfusz (VBNSF3)
+output: html_notebook
 ---
-
-# Skills needed to solve this assignment
-
--   Using R and RStudio, reading data
--   Reporting using RMarkdown
--   Using Git and Github (for submitting the task)
--   Data manipulation (e.g. dplyr, tidyr)
--   String manipulation (e.g. stringr)
-
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+#setup
+setwd("~/r_data_analysis_2122_fall/assignments")
+#install.packages("tidyverse")
+#install.packages("stringr", dependencies=TRUE)
+#install.packages("magrittr")
+#install.packages("curl")
+#install.packages("readr")
 library(tidyverse)
-```
-
-# Background
-
-Your Cuban uncle sets up a cocktail bar in downtown Budapest. He has a secret list of cocktails that he would like to serve in the bar. He asks you to do create a few lists and tables to set up the shop. As your uncle is a secret hipster, he has a dataset on Github that you can use for the task!
-
-![](https://media1.tenor.com/images/57a519cffd0ad4693be3b9c94b211540/tenor.gif?itemid=5195211){width="320"}
-
-Note: There are several different ways to solve these tasks, feel free to come up with your own.
-
+library(tidyr)
+library(dplyr)
+library(magrittr)
+require(stringr)
+library(curl)
+library(readr)
 ## 1. Read the data
+df <- read_tsv("https://raw.githubusercontent.com/nthun/cocktail-balance/master/cocktail_data.tsv")
 
-Read the cocktail dataset from: <https://github.com/nthun/cocktail-balance> You can also find the codebook there.
-
-```{r}
-
-```
+View(df)
 
 ## 2. Transform the data table and clean the ingredient variable!
+#ingredients to rows
+df<- df %>% 
+    mutate(ingredients = strsplit(as.character(ingredients), "<br/>")) %>% 
+    unnest(ingredients)
+    
+#alcohol
+df$ingredients <- sub("\\s*\\([^\\)]+\\)", "", df$ingredients)
 
-The ingredients are currently in a single cell for each cocktail. It would be better to put them in separate rows. Also, the variable should be cleaned of all quantities (e.g. 1/2 oz, 2 dashes, etc.), and the indicator of alcohol content (e.g. 47.3% abv). You will need to use this cleaned table in later tasks.
+#quantities
+df$ingredients <- sub(".*oz|dashes|drops|dash|bsp|drop","", df$ingredients)
+df$ingredients <- gsub('[[:digit:]]+', '', df$ingredients)
 
-```{r}
+#checking variable
+unique(df$ingredients)
 
-```
+#data cleaning
+df$ingredients<-str_trim(df$ingredients)
+df$ingredients <- gsub("<br> dash", "or", df$ingredients)
+df$ingredients <- gsub('\u008f', 'ea', df$ingredients)
+df$ingredients <- gsub('juiceor', 'juice or', df$ingredients)
+
+
 
 ## 3. All ingredients in alphabetical order
+#optional ingredients
+lista<- df %>% 
+    mutate(ingredients = strsplit(as.character(ingredients), " or ")) %>% 
+    unnest(ingredients)
 
-Before opening the bar, you need to find a reliable supplier that has all the ingredients. You need to send a list of all possible ingredients you will need. They don't need the quantities (i.e. how many of these are needed), just the names of the ingredients.
+#list
+lista_abc <- as.data.frame(unique(lista$ingredients))
+lista_abc <- sort(lista_abc, decreasing = FALSE)
+view(lista_abc)
+#list to text
+sink("ingredients.txt")
+print(lista_abc)
+sink()
 
-```{r}
-
-```
 
 ## 4. Number of unique ingredients
-
-How many different ingredients you will need?
-
-```{r}
-
-```
+length(unique(lista$ingredients))
 
 ## 5. What are the top 10 ingredients?
+df2 <- as.data.frame(table(lista$ingredients))
 
-What are the 10 most frequently used ingredients? If there are ties, you can list more than 10.
+df2 %>%
+  top_n(10)
 
-```{r}
-
-```
 
 ## 6. Which cocktail(s) has/have the most ingredients?
-
-Count the number of ingredients and filter all the cocktails that has that many.
-
-```{r}
-
-```
-
+agg <- df %>% group_by(name) %>% summarise(count_ingredients = n())
+agg %>%
+  top_n(1)
+  
+  
 ## 7. How many ingredients appear in only one cocktail (rare ingredient)?
 
-Count all cocktails with only one ingredient, and
-
-```{r}
-
-```
+rare <- df %>% count(ingredients)
+rarelist<- rare %>%
+  top_n(-1)
 
 ## 8. Which cocktail has an ingredient that is only used in one cocktail?
 
-```{r}
-
-```
+rarecoc <- merge(df,rarelist,by="ingredients")
+rarecoc$name
 
 ## 9. What are the cocktails without rare ingredients?
 
-```{r}
-  
-```
+nonrare <- anti_join(df, rarecoc, by = "name")
+nonrare<- nonrare %>% count(name)
+nonrare$name
 
 ## 10. Create a cheat sheet for the bartender!
 
-Create a matrix that shows all cocktail names as rows and all ingredients as columns. When a cocktail requires an ingredient, there should be an "X" in the cell, otherwise, the cell should remain empty. Example:
+cheat<- select(df, -c(abv,acid,sugar,type,index,instructions, ncotw))
 
-```{r echo=FALSE}
-tribble(~name, ~Lime, ~`White rum`, ~`Cane sugar`, ~`Coca-cola`, ~Mint, ~Soda,
-        "Caipirissima", "X", "X", "X", "", "", "",
-        "Cuba Libre", "X", "X", "", "X","","",
-        "Mojito", "X", "X", "", "", "X", "X") %>% 
-    relocate(name, sort(names(.)))
-```
+cheat$X <- "1"
 
-```{r}
-
-```
-
-
-Congrats, the bar is now officially open!
-
-![](https://i.pinimg.com/originals/4e/c1/0c/4ec10c9d32b2c7c28b4b638c7f809ec5.gif){width="320"}
+cheatsheet <- tapply(cheat$X, cheat[c("ingredients", "name")], mean)
