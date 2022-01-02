@@ -30,8 +30,18 @@ The 2020-09-22 TidyTueday datasets are about climbing expeditions. From the thre
 -   The bars are ordered by the sum of all expeditions (use `fct_reorder()`).
 -   The bar colors use the viridis palette and light theme.
 
-```{r}
+```{r} 
+#adatok beolvasása
 expeditions_data <- read.table("C:/Users/qzinw/rprog/r_data_analysis_2122_fall/data/expeditions.csv", sep=",", stringsAsFactors=FALSE, quote ="\"", row.names = NULL, fill=TRUE, header = TRUE)
+library(forcats)
+library(dplyr)
+#15 leggyakoribb csúcs + other --> a datacamp-ből vett count ugyanúgy szépen sorrendbe teszi
+common_peaks <- expeditions_data %>%
++     mutate(common_peaks = fct_lump(peak_name, n = 15)) %>%
++     count(common_peaks, sort = TRUE)
+
+# final lista, other nélkül
+final_peaks <- subset(common_peaks, common_peaks!="Other")
 ```
 
 ## Task 2: PhDs awarded
