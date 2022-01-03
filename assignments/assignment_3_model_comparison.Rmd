@@ -1,8 +1,10 @@
 ---
-title: "Assignment 3: Model comparison"
-author: "Marton Kovacs/Zoltan Kekecs"
-output: html_document
-editor_options: 
+title: 'Assignment 3: Model comparison'
+author: "Adel Kovacs"
+output:
+  html_document: default
+  pdf_document: default
+editor_options:
   chunk_output_type: console
 ---
 
@@ -58,8 +60,32 @@ In your discussion of the findings, briefly interpret the results of the above a
 
 Read the dataset used in this assignment. Pay attention to the extension of the datafile.
 
-```{r}
+*First I have loaded the packages and came back here every time I needed to add one*
 
+```{r, message = FALSE}
+library(dplyr)
+library(forcats)
+library(tidyr)
+library(readr)
+library(stringr)
+library(readxl)
+library(openxlsx)
+library(ggplot2)
+library(performance)
+library(see)
+library(patchwork)
+library(broom)
+library(sjPlot)
+library(sjmisc)
+library(sjlabelled)
+library(lmtest)
+library(ggpubr)
+```
+
+*I could not load it from github, each browser I have tried downloaded it instead of showing the raw data, so this is how I load it from my PC*
+
+```{r}
+pain_experience <- read.xlsx("/Users/kovacsjenifer/assignment/assignment_3_dataset.xlsx")
 ```
 
 ## Data and model diagnostics 
@@ -68,16 +94,94 @@ Read the dataset used in this assignment. Pay attention to the extension of the 
 
 Run an exploratory data analysis (EDA) to investigate the dataset.
 
-```{r}
+*Looking for coding errors or strong trends I have mainly did it with plots. I have paired some variables, plotted them and looked for extraordinary values*
 
+*It was also good for seeing some possible correlations, so I added the lines*
+
+```{r}
+pain_experience %>%
+  summary()
+```
+
+```{r, message = FALSE}
+ggplot(pain_experience, aes(age, pain)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE)
+```
+
+*Age and IQ should be a flat line, since IQ does not supposed to change by age and supposed to have a mean at 100*
+
+```{r, message = FALSE}
+ggplot(pain_experience, aes(age, IQ)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE)
+```
+
+```{r}
+ggplot(pain_experience, aes(age, weight)) +
+  geom_point()
+```
+
+```{r}
+ggplot(pain_experience, aes(age, household_income)) +
+  geom_point()
+```
+
+*I have handled the varibale I wanted to work with as factor and also checked the levels and values*
+
+```{r}
+is.factor(pain_experience$sex)
+as.factor(pain_experience$sex)
+```
+
+*I have looked at normal distributions*
+
+```{r}
+ggdensity(pain_experience$IQ)
+```
+
+*This one seems to be not okay, since I still have to filter out a coding error*
+
+```{r}
+ggdensity(pain_experience$pain)
+```
+
+```{r}
+ggdensity(pain_experience$household_income)
+```
+
+```{r}
+ggdensity(pain_experience$age)
 ```
 
 #### Correct coding errors
 
 If you find values in the dataset during the EDA, that are not correct based on the provided descriptions of the variables of the dataset please correct them here.
 
-```{r}
+*What I found:*
 
+*There was an outlier in the variable pain (=50), I've filtered it out*
+
+*I've looked at IQ distribution and it seems like the quite outliers does not have a big effect on the linear line, so I've let them in the data*
+
+*There was an extremely low weight (33.8), I've filtered it out*
+
+*I have found "woman" instead of "female", I changed that*
+
+```{r}
+pain_experience <- pain_experience %>%
+  mutate(sex = replace(sex, sex == "woman", "female")) %>%
+  filter (pain < 11) %>%
+  filter (weight > 40)
+
+pain_experience %>%
+  summary()
+```
+
+*I am checking pain's normality again*
+
+```{r}
+ggdensity(pain_experience$pain)
 ```
 
 ### Model diagnostics
@@ -86,7 +190,8 @@ If you find values in the dataset during the EDA, that are not correct based on 
 In order to test the more complex model for outliers and to test the assumptions first build the model.
 
 ```{r}
-
+complex_model <- lm(pain ~ age + sex + STAI_trait + pain_cat + mindfulness + cortisol_serum + cortisol_saliva, data=pain_experience)
+summary(complex_model)
 ```
 
 #### Checking for influential outliers
@@ -94,28 +199,32 @@ In order to test the more complex model for outliers and to test the assumptions
 Check for outlier values in the model.
 
 ```{r}
-
+complex_model %>%
+  augment() %>%
+  arrange(desc(.cooksd))
 ```
+
+*I have found it alright*
 
 #### Checking assumptions
 
-Check the normality assumption.
+*I have checked them in once*
 
 ```{r}
-
+check_model(complex_model)
 ```
+
+Check the normality assumption.
+
+*Normality - I found it right*
 
 Check the linearity assumption.
 
-```{r}
-
-```
+*I also found it right*
 
 Check the homoscedasticty assumption (homogeneity of variance).
 
-```{r}
-
-```
+*I also found it right*
 
 Check the multicollinearity assumption.
 
@@ -125,66 +234,103 @@ Some info about VIF:
 https://statisticalhorizons.com/multicollinearity
 http://blog.minitab.com/blog/understanding-statistics/handling-multicollinearity-in-regression-analysis
 
-```{r}
-
-```
+*I have only found one error: cortisol from blood and cortisol from saliva of course correlated and violating multicollinearity assumption (VIF > 5), I am dropping saliva (no specific reason why this and not the other)*
 
 ### Making decision based on model diagnostics
 
 If based on the assumption tests you decide to drop a predictor variable you should do that here. Create your updated model.
 
 ```{r}
-
+complex_model2 <- lm(pain ~ age + sex + STAI_trait + pain_cat + mindfulness + cortisol_serum, data=pain_experience)
+summary(complex_model2)
 ```
 
 #### Checking outliers of the updated model
 
 ```{r}
-
+complex_model2 %>%
+  augment() %>%
+  arrange(desc(.cooksd))
 ```
 
 #### Checking assumptions of the updated model
 
-Normality assumption
+*Also did it in once*
 
 ```{r}
-
+check_model(complex_model2)
 ```
+
+Normality assumption
 
 Linearity assumption
 
-```{r}
-
-```
-
 Homoscedasticty assumption (homogeneity of variance)
-
-```{r}
-
-```
 
 Multicollinearity assumption
 
-```{r}
-
-```
+*I have found them alright*
 
 ## Model comparison
 
 Create the simple model and get the results of the model that needs to be reported based on the What to report section.
 
 ```{r}
+simple_model <- lm(pain ~ age + sex, data = pain_experience)
+simple_model
+tab_model(simple_model)
+```
 
+We have a significant model **(F(2,156) = 7.511, p < 0.001)**, where age is a significant main effect (p<0.001), but not gender.
+
+The explained variance of the dependent variable is **adj R2 = 0.07614**, so it is 7,6%, which we hope will be better in the more complex model. 
+
+The confidence interval for age is [-0.13, -0.04] which does not contain 0, and [-0.35, 0.56] for sex which does. 
+
+**The regression equation: Y = 8.49145 + -0.08906 * x1 + 0.10287 * x2**
+
+Calculating "by hand", for a 40 years old male it should be 5.03192 level of pain. Checking it, turns out okay (probably it knows all other decimals, that is why it is not exactly the same)
+
+```{r}
+8.49145 - 0.08906 * 40 + 0.10287 * 1
+
+example <- tibble(age=40, sex="male")
+predict(simple_model, example)
 ```
 
 Create the more complex model based on the results of the model diagnostics. Also, get the results that needs to be reported based on the What to report section.
 
 ```{r}
-
+complex_model2 <- lm(pain ~ age + sex + STAI_trait + pain_cat + mindfulness + cortisol_serum, data=pain_experience)
+summary(complex_model2)
+tab_model(complex_model2)
 ```
+
+*My model explained 32 % of the variability of experienced pain. **adj R2 = 0.32**. Two of my predictors came out significant, pain catastrophizing (p = 0.003), and cortisol serum (p < 0.001)*
+
+*The more complex model seems more accurate to predict pain (simple model adj R2 was 0.076)*
+
+*The complex model was overall significant (F(6,151)=13.33, p < 0.001), but age does not come out significantly important here (p = 0.139)*
+
+*The equation of the more complex model is:*
+
+**Y = 1.99957 + -0.03488 * x1 +  0.30051 * x2 + -0.01229 * x3 + 0.08487 * x4 + -0.14827 * x5 + 0.53193 * x6**
 
 Compare the two models.
 
 ```{r}
-
+compare <- anova(simple_model, complex_model2)
+compare
 ```
+
+OR
+
+```{r}
+lrtest(simple_model, complex_model2)
+```
+
+*The complex model is significantly better, than the simple one (F(4)=15.221, p < 0.001)*
+
+*The  likelihood ratio test also suggest to use the complex model, Chisq(4) = 53.523, p < 0.001*
+
+*The more complex model predicts outcome (pain) with higher efficiency, changes adj R2 from 0.076 to 0.32, explaining 24,4 % more variance of outcome variable. Still not all predictors seem to be significant, so it would be more efficient to include less predictors in the model.*
