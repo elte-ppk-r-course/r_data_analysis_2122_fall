@@ -3,8 +3,6 @@ title: "Assignment1: Cocktails"
 author: Dora Czirfusz (VBNSF3)
 output: html_notebook
 ---
-#setup
-setwd("~/r_data_analysis_2122_fall/assignments")
 #install.packages("tidyverse")
 #install.packages("stringr", dependencies=TRUE)
 #install.packages("magrittr")
