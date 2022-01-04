@@ -134,6 +134,47 @@ Notes:
 -   Both axis scales are log transformed and the labels comma formatted, using `scales::comma_format()`
 -   The point size is 2, . The theme is set to light.
 
-```{r}
+*First I have loaded the data*
 
+```{r}
+tt_data <- tt_load("2019-11-05")
+commute <- tt_data$commute
 ```
+
+*Then I changed the type of the variables I want to work with*
+
+```{r}
+commute$mode <- as.factor(commute$mode)
+commute$state_abb <- as.factor(commute$state_abb)
+```
+
+*After I made a dataframe with the variables and values I am interested in*
+
+```{r}
+commute_to_plot <- 
+  commute %>%
+  group_by(mode, state_abb, state_region) %>%
+  summarize (Count =sum(n))
+```
+
+*To have all columns I need, I made it wider*
+
+```{r}
+  commute_to_plot_wider <- pivot_wider(commute_to_plot, names_from = "mode", values_from = "Count")
+```
+
+*Lastly I made the plot. Seems like I have a bit different data on, but I assume that maybe the data was updated since then*
+
+```{r}
+ggplot(commute_to_plot_wider, aes(x=Walk, y=Bike, color=state_region)) +
+  geom_point (size= 2) +
+  geom_text(aes(label=state_abb), colour = "black") +
+  theme_light() +
+  scale_x_log10 (label = comma_format())+
+  scale_y_log10 (limits = c(100, 100000), label = comma_format()) +
+  labs(title = "Title number of people walking vs. biking to work in each USA state") +
+  xlab("Number of ppl walking to work (log N)") +
+  ylab("Number of ppl biking to work (log N)") +
+  scale_colour_discrete(name="State region")
+```
+
