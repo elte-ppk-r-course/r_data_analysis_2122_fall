@@ -20,9 +20,9 @@ Your first study in this area is related to assessing the influence of trait and
 
 # Procedures and measures
 
-Use the data file called ‘assignment_3_dataset’, from the 'data/' folder.
+Use the data file called 'assignment_3_dataset', from the 'data/' folder.
 
-You have collected data from 160 adults who were scheduled to undergo surgical extraction of the third mandibular molar (wisdom tooth surgery). Patients filled out a form in the waiting room before their surgery. The form contained questions about their sex, age, and weight, and psychological questionnaires assessing anxiety, pain catastrophizing, and mindfulness (see descriptions below). You also got blood samples and saliva samples from participants in the waiting room 5 minutes before their operations to determine the serum (a component of the blood) and salivary cortisol levels of participants. Participants were contacted 5 hours after the surgery to see how much pain they were experiencing. The __level of pain__ at that moment was recorded using a numerical rating scale using a __scale of 0 to 10__, where 0 means “no pain” and 10 means “worst pain I can imagine”. 
+You have collected data from 160 adults who were scheduled to undergo surgical extraction of the third mandibular molar (wisdom tooth surgery). Patients filled out a form in the waiting room before their surgery. The form contained questions about their sex, age, and weight, and psychological questionnaires assessing anxiety, pain catastrophizing, and mindfulness (see descriptions below). You also got blood samples and saliva samples from participants in the waiting room 5 minutes before their operations to determine the serum (a component of the blood) and salivary cortisol levels of participants. Participants were contacted 5 hours after the surgery to see how much pain they were experiencing. The __level of pain__ at that moment was recorded using a numerical rating scale using a __scale of 0 to 10__, where 0 means "no pain" and 10 means "worst pain I can imagine". 
 
 __The State Trait Anxiety Inventory:__ T measures trait anxiety on a scale of 20 to 80, higher scores mean higher anxiety. Anxiety has been found in many studies to positively correlate with the level of pain experienced. This is __variable STAI_trait__ in the dataset.
 
@@ -40,15 +40,15 @@ To answer this research question you will __need to compare two models__ (with a
 
 # What to report
 
-As usual, before you can interpret your model, you will need to run data and model diagnostics. First, check the variables included in the more complex model (age, sex, STAI, pain catastrophizing, mindfulness, and cortisol measures as predictors, and pain as an outcome) for __coding errors__, and the model itself for __influential outliers__ (for example using Cook’s distance). Furthermore, check the final model to see if the __assumptions of linear regression hold true__, that is, __normality__ (of the residuals), __linearity__ (of the relationship), __homogeneity of variance__ (also called homoscedasticity) and that there is no excess __multicollinearity__ (“uncorrelated predictors” in Navarro’s words). If you find anything amiss during these checks, make the appropriate decision or correction and report your findings and actions in your report. 
+As usual, before you can interpret your model, you will need to run data and model diagnostics. First, check the variables included in the more complex model (age, sex, STAI, pain catastrophizing, mindfulness, and cortisol measures as predictors, and pain as an outcome) for __coding errors__, and the model itself for __influential outliers__ (for example using Cook's distance). Furthermore, check the final model to see if the __assumptions of linear regression hold true__, that is, __normality__ (of the residuals), __linearity__ (of the relationship), __homogeneity of variance__ (also called homoscedasticity) and that there is no excess __multicollinearity__ ("uncorrelated predictors" in Navarro's words). If you find anything amiss during these checks, make the appropriate decision or correction and report your findings and actions in your report. 
 
 __Note:__ If you do any changes, such as exclude cases, or exclude predictors from the model, you will have to re-run the above checks for your final data and model.
 
 Report the results of the simpler model and the more complex model. For both models you should report the model test statistics (adj.R2, F, df, and p value). Also, report the statistics describing the coefficients of the predictors in a table format (unstandardized regression coefficients and 95% confidence intervals, standardized regression coefficients (B and Beta values), and p values).
 
-Write up the regression equation of the more complex model in the form of ???? = ????0 + ????1 ??? X1 + ????2 ??? X2 +…+ bn * Xn, in which you use the actual regression coefficients of your models. (b0 stands for the intercept and b1, b2 … bn stand for the model coefficients for each of the predictors, and X1, X2, … Xn denote the predictors).
+Write up the regression equation of the more complex model in the form of ???? = ????0 + ????1 ??? X1 + ????2 ??? X2 +...+ bn * Xn, in which you use the actual regression coefficients of your models. (b0 stands for the intercept and b1, b2 ... bn stand for the model coefficients for each of the predictors, and X1, X2, .. Xn denote the predictors).
 
-Compare the two models in terms of how much variance they explain of pain’s variability in the sample. Report Akaike information criterion (AIC) for both models and the F test statistic and p value of the likelihood ratio test comparing the two models.
+Compare the two models in terms of how much variance they explain of pain's variability in the sample. Report Akaike information criterion (AIC) for both models and the F test statistic and p value of the likelihood ratio test comparing the two models.
 
 # What to discuss
 
@@ -243,6 +243,8 @@ If based on the assumption tests you decide to drop a predictor variable you sho
 ```{r}
 complex_model2 <- lm(pain ~ age + sex + STAI_trait + pain_cat + mindfulness + cortisol_serum, data=pain_experience)
 summary(complex_model2)
+aic_complex <- AIC(complex_model2)
+aic_complex
 ```
 
 #### Checking outliers of the updated model
@@ -271,6 +273,8 @@ Multicollinearity assumption
 
 *I have found them alright*
 
+*The updated complex model is overall significant (F(6,151) = 13.33, p < 0.001, AIC = 528.673), with significant predictor variables like pan catastrophizing (p = 0.003) and cortisol serum (p < 0.001).*
+
 ## Model comparison
 
 Create the simple model and get the results of the model that needs to be reported based on the What to report section.
@@ -279,9 +283,10 @@ Create the simple model and get the results of the model that needs to be report
 simple_model <- lm(pain ~ age + sex, data = pain_experience)
 simple_model
 tab_model(simple_model)
+aic_simple <- AIC(simple_model)
 ```
 
-We have a significant model **(F(2,156) = 7.511, p < 0.001)**, where age is a significant main effect (p<0.001), but not gender.
+We have a significant model **(F(2,156) = 7.511, p < 0.001, AIC = 574.196)**, where age is a significant main effect (p<0.001), but not gender.
 
 The explained variance of the dependent variable is **adj R2 = 0.07614**, so it is 7,6%, which we hope will be better in the more complex model. 
 
@@ -326,7 +331,9 @@ compare
 OR
 
 ```{r}
-lrtest(simple_model, complex_model2)
+compare2 <- lrtest(simple_model, complex_model2)
+compare2
+aic_simple - aic_complex
 ```
 
 *The complex model is significantly better, than the simple one (F(4)=15.221, p < 0.001)*
@@ -334,3 +341,5 @@ lrtest(simple_model, complex_model2)
 *The  likelihood ratio test also suggest to use the complex model, Chisq(4) = 53.523, p < 0.001*
 
 *The more complex model predicts outcome (pain) with higher efficiency, changes adj R2 from 0.076 to 0.32, explaining 24,4 % more variance of outcome variable. Still not all predictors seem to be significant, so it would be more efficient to include less predictors in the model.*
+
+*I have found a great article [here](http://faculty.washington.edu/skalski/classes/QERM597/papers_xtra/Burnham%20and%20Anderson.pdf) (p. 271) about delta AIC, that says "The (delta)-i are easy to interpret and allow a quick strength-of-evidence comparison and ranking of candidate hypotheses or models. The larger the (delta)i, the less plausible is fitted model i (the first one in the comparison) as being the best approximating model in the candidate set". That suggest that the second model is significantly better than the first*
