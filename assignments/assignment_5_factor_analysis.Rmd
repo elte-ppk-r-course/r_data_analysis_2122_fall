@@ -103,12 +103,44 @@ Talk about the limitations of your study and findings.
 Read the Animal Rights Scale (ARQ) dataset from the 'data/' folder. Pay attention to the extension.
 
 ```{r}
-
+asr_raw <- readr::read_csv('https://raw.githubusercontent.com/andr3ahor/r_data_analysis_2122_fall/master/data/assignment_5_dataset.csv')
+library(psych)
+library(Hmisc)
 ```
 
 ## EDA
 
 ```{r}
+str(asr_raw)
+summary(asr_raw)
+
+#NA azonosítása
+library(dplyr)
+library(visdat)
+which(is.na(data_frame), arr.ind=TRUE)
+sum(is.na(asr_raw)) #11 hiányzó adat
+colSums(is.na(asr_raw)) #oszlponokénti hiányzók
+
+#Vizuálisan --> feltehetően randomok a hiányzó adatok, kevés adat hiányzik (0.2%)
+visdat::vis_miss(asr_raw)
+
+#NA adatok pótlása mediánnal, nem akartam törölni, mert az adatvesztéssel jár. Ez pedig egy sokak által ajánlott lehetőség. Megtehettem volna, hogy a kalkulációkból kihagyom őket (na.rm = TRUE), de minden faktor esetében ugyanannyi adattal szerettem volna dolgozni.
+tidy_asr <- asr_raw %>% 
+    mutate_if(is.numeric, function(x) ifelse(is.na(x), median(x, na.rm = T), x))
+
+
+#Otlier adatok azonosítása 
+boxplot(tidy_asr[c(1:28)]) #egyik outlier sem haladja meg a választható értékeket, így nem töröltem őket az adattáblából
+
+#Nem derül ki az adatok leírásából, hogy a fordított itemek már fordítva vannak-e benne az adathalmazban. Az outlierek ezt nem mutatták egyértelműen.
+
+#Eloszlások
+par(mar=c(1,1,1,1)) #mert ezt íRta ki előtte: Error in plot.new() : figure margins too large
+hist(tidy_asr[c(1:28)])
+
+data <- tidy_asr[1:154, 1:28]
+df <- data.frame(tidy_asr)
+
 
 ```
 
@@ -119,6 +151,14 @@ Recode the sex and party variables as factor type variables with the following l
   * party: 1 - democrat, 2 - republican, 3 - other, 4 - none
 
 ```{r}
+recoded <- tidy_asr %>% mutate(sex = recode(sex, 
+                                 "1" = "male",
+                                 "2" = "female"))
+recoded <- tidy_asr %>% mutate(party = recode(party, 
+                                 "1" = "democrat",
+                                 "2" = "republican",
+                                 "3" = "other",
+                                 "4" = "none"))
 
 ```
 
@@ -127,13 +167,18 @@ Recode the sex and party variables as factor type variables with the following l
 __Note:__ Remember to only include the variables of the questionnaire that will be part of the factor analysis.
 
 ```{r}
+library(ggcorrplot)
+library(ggplot2)
 
 ```
 
 Create the correlation matrix.
 
 ```{r}
-
+asr.cor <- cor(data) 
+asr.cor <- round(asr.cor, 2)
+asr.rcorr<-rcorr(as.matrix(data))
+valtozo <- round(asr.rcorr$P, 2) #látható, hogy helyenként nincs szignifikáns korreláció, de a legtöbb érték esetében igen
 ```
 
 ## Visualizing the correlation matrix
@@ -141,7 +186,21 @@ Create the correlation matrix.
 Create a visualization of the results of the correlation matrix.
 
 ```{r}
+library(psycho)
+library(tidyverse)
 
+p1 <- ggcorrplot(asr.cor, 
+           hc.order = FALSE, 
+           type = "upper",
+           lab = FALSE)
+
+corrplot(asr.cor, method = "color",  
+         type = "lower", order = "original", 
+         addCoef.col = "black", 
+         tl.col = "darkblue", tl.srt = 45,
+         sig.level = 0.01,  
+         diag = FALSE)
+#elmentve szebbre a assignments/assignment_5 mappába
 ```
 
 ## Test for factorability
@@ -149,19 +208,44 @@ Create a visualization of the results of the correlation matrix.
 Calculate the KMO score.
 
 ```{r}
+# library(psych) kell hozzá
 
+asr_kmo <- KMO(data)
+print(asr_kmo)
+#overall MSA = 0.88 felett, legalacsonyabb: ar28= 0.77 --> ez így elég jó
+
+#megnéztem azért, hogy ar28 nélkül lenne-e változás, de nincs
+asr_kmo2 <- KMO(data[c(1:27)])
+print(asr_kmo)
+
+#benne hagyom mindegyik itemet
 ```
 
 ## Test for multivariate normality
 
 ```{r}
+#install.packages("mvnormtest")
+library(mvnormtest)
+#install.packages("MVN")
+library(MVN)
+#Mardia’s MVN tes
+result <- mvn(data, mvnTest = "mardia")
+result$multivariateNormality
 
+# Henze-Zirkler’s MVN test
+result.hz <- mvn(data, mvnTest = "hz")
+result.hz$multivariateNormality
+
+#mindkét teszt az MVN hiányát jelzi, elkpzelhető, hogy az outlierek miatt
 ```
 
 Test for skewness and kurtosis.
 
 ```{r}
-
+#install.packages("QuantPsyc")
+library(QuantPsyc)
+normality <- mult.norm(data)$mult.test
+print(normality) #sérül a a ferdeség és a csúcsosság is. Mivel azonban a KMO nagyon bíztató, lefuttattam az elemzéseket.
 ```
 
 ## Create scree plot
@@ -169,7 +253,14 @@ Test for skewness and kurtosis.
 Create a scree plot to help the decision on how many factors to include.
 
 ```{r}
+scree(data)
+#ábra mentve az assingment_5 mappába
+#az ábra alapján 1, 2 vagy esetleg 6 faktort ajánl az alapján, hogy hol van az eigenvalue vonal és hol törik meg a vonal.
 
+#Emiatt csináltam egy paralell scree plotot is, ez is mentve
+fa.parallel(data)
+
+#A szimulált adatok alapján 2 vagy 3 faktor ajánlott. Én ezek alapján a 3 faktoros felépítést fogom elkészíteni.
 ```
 
 ## Run the factor analysis
@@ -177,31 +268,59 @@ Create a scree plot to help the decision on how many factors to include.
 Run the factor analysis with the chosen number of factors.
 
 ```{r}
+#install.packages("GPArotation")
+library(GPArotation)
+efa3 <- fa(data,
+          nfactors = 3,
+          fm="ml",
+          max.iter = 100,
+          rotate = "oblimin")
 
+
+
+fa.diagram(efa3)
+
+#mentve assignment_5 mappába az ábrák
+#EFA6 = factanal(~ ., data, factors = 6, rotation = "none")
 ```
 
 Sort the communality scores in decreasing order.
 
 ```{r}
 
+communa3 <- efa3$communality
+commun3 <- sort(communa3, decreasing = TRUE)
+commun3 <- round(commun3, 3)
+
+
 ```
 
 Calculate the mean communality scores.
 
 ```{r}
+mean_c3 <- mean(commun3)
+
 
 ```
 
 Show the factor loadings for the chosen factor structure.
 
 ```{r}
+load <- efa3$loadings
+fac1 = efa3$loadings[,1]
+fac2 = efa3$loadings[,2]
+fac3 = efa3$loadings[,3]
 
+factors <- data.frame(factor1 = fac1 , 
+           factor2 = fac2,
+           factor3 = fac3)
+factors <- round(factors,3) #Nem tudtam kitörölni a legkisebb értékeket
 ```
 
 Visualize the factor structure.
 
 ```{r}
-
+fa.diagram(efa3)
 ```
 
 ## Run linear regression
@@ -209,13 +328,13 @@ Visualize the factor structure.
 Calculate the factor scores.
 
 ```{r}
-
+scores <- round(efa3$scores, 1)
 ```
 
 Bind factor scores to the original dataset.
 
 ```{r}
-
+#ezt nem tudtam megoldani
 ```
 
 Run the logistic regression.

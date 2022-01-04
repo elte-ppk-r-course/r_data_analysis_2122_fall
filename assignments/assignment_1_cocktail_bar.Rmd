@@ -32,7 +32,7 @@ Note: There are several different ways to solve these tasks, feel free to come u
 Read the cocktail dataset from: <https://github.com/nthun/cocktail-balance> You can also find the codebook there.
 
 ```{r}
-cocktail_data <- read.table("C:/Users/qzinw/rprog/r_data_analysis_2122_fall/data/cocktail_data.tsv", header = TRUE, sep = "\t")
+cocktail_data <- read.table('https://raw.githubusercontent.com/andr3ahor/r_data_analysis_2122_fall/master/data/cocktail_data.tsv', header = TRUE, sep = "\t")
 
 # Nem tudtam kezelni a ' és # karaktereket, ezért kitöröltem őket az eredeti data fájlból.
 ```
