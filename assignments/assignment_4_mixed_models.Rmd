@@ -279,7 +279,7 @@ predict(mixed_model_A,dataset_B, allow.new.levels = TRUE) - dataset_B$pain
 sum(predict_on_B^2)
 ```
 
-And also this, but it gave an error
+And also this, but it gave me an error
 
 ```{r}
 # glance(predict_on_B)
