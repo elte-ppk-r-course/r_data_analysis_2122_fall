@@ -65,7 +65,7 @@ expeditions_to_plot <- expeditions %>%
 ```
 
 *Lastly I made the plot using the instructions*
-*It is odd, because ever since now the order of the bars were correct. Although I have not changed anything in the code it is not the same as the example anymore*
+*It is odd, because ever since now the order of the bars were correct. Although I have not changed anything in the code it is not the same as the example (or exact order) anymore. I would love to know why, so any feedback is appriciated*
 
 ```{r}
 ggplot(expeditions_to_plot, aes(x = n, y = reorder(peak_name, n), fill = season)) +
