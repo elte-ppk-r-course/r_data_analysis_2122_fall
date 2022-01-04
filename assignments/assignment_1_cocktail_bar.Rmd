@@ -203,20 +203,15 @@ print(cocktails_with_rares$name)
 
 ## 9. What are the cocktails without rare ingredients?
 
-*I have tried several things here, but I was not successful*
+*These are:*
 
 ```{r}
-#cocktails_with_rares_names <- as.factor(cocktails_with_rares$name) 
+without_rare <- cocktail_bar_cleaned %>%
+  group_by(value) %>% 
+  filter(n() != 1)
 
-#rares <- as.data.frame(cocktails_with_rares$name)
-
-#cocktails_without_rares <- cocktail_bar_cleaned %>%
-  #pivot_wider(names_from = ingredients)
-
-#all_cocktails <- as.factor(cocktails_without_rares$name)
-#all_cocktails <- as.data.frame(all_cocktails)
-
-#filter (all_cocktails != rares)
+without_rare <- unique(without_rare$name)
+without_rare
 ```
 
 ## 10. Create a cheat sheet for the bartender!
