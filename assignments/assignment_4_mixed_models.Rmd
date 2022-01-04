@@ -17,7 +17,7 @@ This assignment is related to the previous lab assignment concerning perioperati
 
 Your research paper on the effect of the psychological and hormonal predictors of postoperative pain was so successful, that you managed to secure research funding for a multi-site replication study. Here your collaborators collect data in the same way you did in the original study at 20 different hospital sites. The goal of the study is to increase the generalizability of your findings. You would like to assess the model coefficients and the overall predictive efficiency of the predictors in your model.
 
-As a reminder, here is the protocol for data collection: â€œYou have collected data from adults who were scheduled to undergo surgical extraction of the third mandibular molar (wisdom tooth surgery). Patients filled out a form in the waiting room before their surgery. The form contained questions about their sex, age, and weight, and psychological questionnaires assessing anxiety, pain catastrophizing, and mindfulness (see descriptions below). You also got blood samples and saliva samples from participants in the waiting room 5 minutes before their operations to determine the serum (a component of the blood) and salivary cortisol levels of participants. Participants were contacted 5 hours after the surgery to see how much pain they were experiencing. The __level of pain__ at that moment was recorded using a numerical rating scale using a __scale of 0 to 10__, where 0 means â€œno painâ€? and 10 means â€œworst pain I can imagineâ€?. 
+As a reminder, here is the protocol for data collection: â€œYou have collected data from adults who were scheduled to undergo surgical extraction of the third mandibular molar (wisdom tooth surgery). Patients filled out a form in the waiting room before their surgery. The form contained questions about their sex, age, and weight, and psychological questionnaires assessing anxiety, pain catastrophizing, and mindfulness (see descriptions below). You also got blood samples and saliva samples from participants in the waiting room 5 minutes before their operations to determine the serum (a component of the blood) and salivary cortisol levels of participants. Participants were contacted 5 hours after the surgery to see how much pain they were experiencing. The __level of pain__ at that moment was recorded using a numerical rating scale using a __scale of 0 to 10__, where 0 means "no pain" and 10 means "worst pain I can imagine"?. 
 
 __The State Trait Anxiety Inventory:__ T measures trait anxiety on a scale of 20 to 80, higher scores mean higher anxiety. Anxiety has been found in many studies to positively correlate with the level of pain experienced. This is __variable STAI_trait__ in the dataset. 
 
@@ -25,7 +25,7 @@ __The Pain Catastrophizing Scale__ measures the extent of pain catastrophizing, 
 
 __The Mindful Attention Awareness Scale (MAAS)__ measures dispositional mindfulness, which may be described as a tendency to turn attention to present-moment experiences in an open, non-judgemental way. The MAAS total score ranges from 1 to 6 (an average of the item scores), with higher scores representing higher dispositional mindfulness. Trait mindfulness has been theorized to serve as a protective factor against pain, as the individual would be more objective about their pain experience and tend to associate less discomfort, despair, and hopelessness to the pain-related sensations. This is __variable mindfulness__ in the dataset.
 
-__Cortisol__ is a stress hormone associated with acute and chronic stress. Cortisol levels are thought to be positively associated with pain experience. Cortisol can be __measured from both blood and the saliva__, although, serum cortisol is often regarded in medical research as more reliably related to stress (serum is a component of the blood plasma). These are __variables cortisol_serum__, and __cortisol_saliva__ in the dataset.â€?
+__Cortisol__ is a stress hormone associated with acute and chronic stress. Cortisol levels are thought to be positively associated with pain experience. Cortisol can be __measured from both blood and the saliva__, although, serum cortisol is often regarded in medical research as more reliably related to stress (serum is a component of the blood plasma). These are __variables cortisol_serum__, and __cortisol_saliva__ in the dataset."
 
 # Datasets
 
@@ -37,7 +37,7 @@ First, fit a linear mixed model to estimate postoperative pain on datafile A. Yo
 
 Also, compute the variance explained by the fixed effect predictors using marginal R^2^, and the variance explained by the fixed and random effect terms combined using conditional R^2^. Now use the model coefficients obtained on data file A to predict pain in datafile B.
 
-__IMPORTANT:__ Do not fit the regression models on data file B (donâ€™t re-train your models), just use the regression equation you derived based on datafile A. These regression equations should be applied on the new data (datafile B), to predict pain.
+__IMPORTANT:__ Do not fit the regression models on data file B (don't re-train your models), just use the regression equation you derived based on datafile A. These regression equations should be applied on the new data (datafile B), to predict pain.
 
 Now compute the variance explained by the model on datafile B. You can do this by using the formula: __1 - (RSS / TSS) = R^2__. Compare this R^2^ to the marginal and conditional R^2^ values computed for the model on datafile A. 
 
@@ -59,7 +59,7 @@ Read the datasets used in this assignment. Pay attention to the extensions of th
 
 *First I have loaded the packages I am going to need (and came back here when I needed to add)*
 
-```{r, masseage=FALSE, warning=FALSE}
+```{r, message=FALSE, warning=FALSE}
 library(dplyr)
 library(tidyr)
 library(readr)
@@ -203,16 +203,22 @@ dataset_B <- dataset_B %>%
 
 *I have not found any outliers or coding errors*
 
-##I fitted the **fixed effect model** from assignment 3
+## I fitted the **fixed effect model** from assignment 3
+*I also check assumptions*
 
 ```{r}
 model_A <- lm(pain ~ age + sex + STAI_trait + pain_cat + mindfulness + cortisol_serum, data = dataset_A)
+check_model(model_A)
+summary(model_A)
 ```
 
-_Then I included the **random effect of hospitals**_
+*model_A is a significant model (F(6,192)=17.74, p = 0.004), with significant variables in it like age (p < 0.001), sex (p = 0.039), mindfulness (p = 0.012) and cortisol serum (p < 0.001).*
+
+_Then I included the **random effect of hospitals** and checked the assumptions again_
 
 ```{r}
 mixed_model_A <- lmer(pain ~ age + sex + STAI_trait + pain_cat + mindfulness + cortisol_serum + (1 | hospital), data = dataset_A)
+check_model(mixed_model_A)
 ```
 
 *The coefficients and the confidence intervals for the complex fixed effect model A are listed here:*
@@ -233,9 +239,9 @@ summary(mixed_model_A)
 confint(mixed_model_A)
 ```
 
-##*Comparing the complex fixed and the complex mixed models*
+## *Comparing the complex fixed and the complex mixed models*
 
-```{r, messages=FALSE}
+```{r, message=FALSE}
 compare <- anova(mixed_model_A, model_A)
 compare
 ```
@@ -250,7 +256,7 @@ r.squaredGLMM(mixed_model_A)
 
 _The marginal R^2 is 0.316, meaning **the variance explained by the fixed factors of the model is 31.6%**._
 
-_The conditional R^2 is 0.433, meaning **the variance explained by the model containing fixed and random effects is higher, 43.3%**._
+_The conditional R^2 is 0.435, meaning **the variance explained by the model containing fixed and random effects is higher, 43.5%**._
 
 *To run my model on the data in dataset B, I made sure that the variables are named the same. (They are)*
 
