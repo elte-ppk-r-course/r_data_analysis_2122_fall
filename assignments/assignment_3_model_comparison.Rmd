@@ -62,7 +62,7 @@ Read the dataset used in this assignment. Pay attention to the extension of the 
 
 *First I have loaded the packages and came back here every time I needed to add one*
 
-```{r, message = FALSE}
+```{r, message=FALSE}
 library(dplyr)
 library(forcats)
 library(tidyr)
@@ -103,7 +103,7 @@ pain_experience %>%
   summary()
 ```
 
-```{r, message = FALSE}
+```{r, message=FALSE}
 ggplot(pain_experience, aes(age, pain)) +
   geom_point() +
   geom_smooth(method = "lm", se = FALSE)
@@ -137,21 +137,21 @@ as.factor(pain_experience$sex)
 *I have looked at normal distributions*
 
 ```{r}
-ggdensity(pain_experience$IQ)
+ggdensity(pain_experience$IQ, xlab = "normality of IQ")
 ```
 
 *This one seems to be not okay, since I still have to filter out a coding error*
 
 ```{r}
-ggdensity(pain_experience$pain)
+ggdensity(pain_experience$pain, xlab = "normality of pain")
 ```
 
 ```{r}
-ggdensity(pain_experience$household_income)
+ggdensity(pain_experience$household_income, xlab = "normality of household income")
 ```
 
 ```{r}
-ggdensity(pain_experience$age)
+ggdensity(pain_experience$age, xlab = "normality of age")
 ```
 
 #### Correct coding errors
@@ -181,7 +181,7 @@ pain_experience %>%
 *I am checking pain's normality again*
 
 ```{r}
-ggdensity(pain_experience$pain)
+ggdensity(pain_experience$pain, xlab = "normality of pain - filtered")
 ```
 
 ### Model diagnostics
@@ -245,6 +245,7 @@ complex_model2 <- lm(pain ~ age + sex + STAI_trait + pain_cat + mindfulness + co
 summary(complex_model2)
 aic_complex <- AIC(complex_model2)
 aic_complex
+tab_model(complex_model2)
 ```
 
 #### Checking outliers of the updated model
