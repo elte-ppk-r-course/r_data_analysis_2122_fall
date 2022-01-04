@@ -65,10 +65,9 @@ expeditions_to_plot <- expeditions %>%
 ```
 
 *Lastly I made the plot using the instructions*
-*It is odd, because since now the order of the bars were correct. Although I have not changed anything in the code it is not the same as the example (or exact order) anymore. I would love to know why, so any feedback is appreciated*
 
 ```{r}
-ggplot(expeditions_to_plot, aes(x = n, y = reorder(peak_name, n), fill = season)) +
+ggplot(expeditions_to_plot, aes(x = n, y = fct_reorder(peak_name, n, .fun = sum), fill = season)) +
   geom_col () +
   theme_light () +
   scale_fill_viridis_d() +
