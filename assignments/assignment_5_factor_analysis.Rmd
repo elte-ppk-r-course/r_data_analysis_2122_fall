@@ -130,9 +130,12 @@ tidy_asr <- asr_raw %>%
 
 
 #Otlier adatok azonosítása 
-boxplot(tidy_asr[c(1:28)]) #egyik outlier sem haladja meg a választható értékeket, így nem töröltem őket az adattáblából
+boxplot(tidy_asr[c(1:28)])
+outliers <- psych::outlier(data)
 
-#Nem derül ki az adatok leírásából, hogy a fordított itemek már fordítva vannak-e benne az adathalmazban. Az outlierek ezt nem mutatták egyértelműen.
+#látható, hogy több outlier is van. Mivel EFA-t szeretnék csinálni, ezért ezeket az adatokat most benne hagyom - de az eredményt ezek tükrében fogom értelmezni.
+
+#Nem derül ki az adatok leírásából, hogy a fordított itemek már fordítva vannak-e benne az adathalmazban.
 
 #Eloszlások
 par(mar=c(1,1,1,1)) #mert ezt íRta ki előtte: Error in plot.new() : figure margins too large
@@ -141,7 +144,8 @@ hist(tidy_asr[c(1:28)])
 data <- tidy_asr[1:154, 1:28]
 df <- data.frame(tidy_asr)
 
-
+#adat jellemzői összesítve
+psych::describe(data)
 ```
 
 ## Data manipulation
@@ -188,6 +192,7 @@ Create a visualization of the results of the correlation matrix.
 ```{r}
 library(psycho)
 library(tidyverse)
+library(corrplot)
 
 p1 <- ggcorrplot(asr.cor, 
            hc.order = FALSE, 
@@ -228,6 +233,7 @@ print(asr_kmo)
 library(mvnormtest)
 #install.packages("MVN")
 library(MVN)
+
 #Mardia’s MVN tes
 result <- mvn(data, mvnTest = "mardia")
 result$multivariateNormality
@@ -236,7 +242,14 @@ result$multivariateNormality
 result.hz <- mvn(data, mvnTest = "hz")
 result.hz$multivariateNormality
 
-#mindkét teszt az MVN hiányát jelzi, elkpzelhető, hogy az outlierek miatt
+# Shapiro-Wilk
+result.sh <- mshapiro.test(t(data))
+
+#mindkét teszt az MVN hiányát jelzi, a normalitás sérül. Nem csinálhatunk maximum likelyhood elemzést.
+
+#Bartlett
+bartlett <- cortest.bartlett(data)
+#a p érték megfelelőnek mutatkozik, elvégezhető a faktoranalízis, mert van valamiféle korreláció.
 ```
 
 Test for skewness and kurtosis.
@@ -245,7 +258,9 @@ Test for skewness and kurtosis.
 #install.packages("QuantPsyc")
 library(QuantPsyc)
 normality <- mult.norm(data)$mult.test
-print(normality) #sérül a a ferdeség és a csúcsosság is. Mivel azonban a KMO nagyon bíztató, lefuttattam az elemzéseket.
+print(normality) #sérül a a ferdeség és a csúcsosság is. Mivel azonban a KMO nagyon bíztató, és a Bartlett is, elvégeztem a faktor analízist.
+
+
 ```
 
 ## Create scree plot
@@ -270,57 +285,131 @@ Run the factor analysis with the chosen number of factors.
 ```{r}
 #install.packages("GPArotation")
 library(GPArotation)
+
+# 3 faktorral, oblimin forgatással, mert korrelációt várok a faktorok között
 efa3 <- fa(data,
           nfactors = 3,
-          fm="ml",
-          max.iter = 100,
+          fm="pa",
           rotate = "oblimin")
 
 
 
-fa.diagram(efa3)
+fa.diagram(efa3) #látható, hogy a 2. faktor igen instabil és kevés item van rajta. Ezért megcsináltam a 2 faktoros változatot is.
+
+efa2 <- fa(data,
+          nfactors = 2,
+          fm="pa",
+          rotate = "oblimin")
+
+fa.diagram(efa2)
+
+#Ez lesz a végső struktúra, megfelelőek a faktortöltések is.Egyedül a 8. tétel nem illeszkedik semleyik faktorra, ezt én kivenném a végső kérdőívből.
 
 #mentve assignment_5 mappába az ábrák
-#EFA6 = factanal(~ ., data, factors = 6, rotation = "none")
+
 ```
 
 Sort the communality scores in decreasing order.
 
 ```{r}
 
-communa3 <- efa3$communality
-commun3 <- sort(communa3, decreasing = TRUE)
-commun3 <- round(commun3, 3)
+communa2 <- efa2$communality
+commun2 <- sort(communa2, decreasing = TRUE)
+commun2 <- round(commun2, 3)
 
+#cumulative variance
+round(efa2$Vaccounted,2)
+
+#eigen values
+eigen <- efa3$e.values
+eigen <- round(eigen,3)
 
 ```
 
 Calculate the mean communality scores.
 
 ```{r}
-mean_c3 <- mean(commun3)
-
+mean_c2 <- mean(commun2)
 
 ```
 
 Show the factor loadings for the chosen factor structure.
 
 ```{r}
-load <- efa3$loadings
-fac1 = efa3$loadings[,1]
-fac2 = efa3$loadings[,2]
-fac3 = efa3$loadings[,3]
+load <- efa2$loadings
+fac1 = efa2$loadings[,1]
+fac2 = efa2$loadings[,2]
 
-factors <- data.frame(factor1 = fac1 , 
-           factor2 = fac2,
-           factor3 = fac3)
-factors <- round(factors,3) #Nem tudtam kitörölni a legkisebb értékeket
+
+factors <- data.frame(F1_rights = fac1 , 
+           F2_research = fac2)
+factors <- round(factors,3) 
+
+#Láthatóvá tettem, hogy melyik item melyik faktorban, mekkora töltéssel van jelen.
+factors[1,][which.min(factors[1,])] <- ""
+factors[2,][which.min(factors[2,])] <- ""
+factors[3,][which.min(factors[3,])] <- ""
+factors[4,][which.min(factors[4,])] <- ""
+factors[5,][which.min(factors[5,])] <- ""
+factors[6,][which.min(factors[6,])] <- ""
+factors[7,][which.min(factors[7,])] <- ""
+factors[8,][which.min(factors[8,])] <- ""
+factors[9,][which.min(factors[9,])] <- ""
+factors[10,][which.min(factors[10,])] <- ""
+factors[11,][which.min(factors[11,])] <- ""
+factors[12,][which.min(factors[12,])] <- ""
+factors[13,][which.min(factors[13,])] <- ""
+factors[14,][which.min(factors[14,])] <- ""
+factors[15,][which.min(factors[15,])] <- ""
+factors[16,][which.max(factors[16,])] <- ""
+factors[17,][which.min(factors[17,])] <- ""
+factors[18,][which.min(factors[18,])] <- ""
+factors[19,][which.max(factors[19,])] <- ""
+factors[20,][which.min(factors[20,])] <- ""
+factors[21,][which.max(factors[21,])] <- ""
+factors[22,][which.min(factors[22,])] <- ""
+factors[23,][which.min(factors[23,])] <- ""
+factors[24,][which.max(factors[24,])] <- ""
+factors[25,][which.min(factors[25,])] <- ""
+factors[26,][which.min(factors[26,])] <- ""
+factors[27,][which.max(factors[27,])] <- ""
+factors[28,][which.max(factors[28,])] <- ""
+
+
 ```
 
 Visualize the factor structure.
 
 ```{r}
-fa.diagram(efa3)
+#install.packages("kableExtra")
+library(kableExtra)
+
+fa.diagram(efa2) #final names?
+
+#Faktorok nevei
+colnames(efa2$loadings) <- c("F1:Attitude to animal's rights", "F2:Attitude to animal research")
+final <- fa.diagram(efa2) #mentve final_efa2 képben
+
+#Final táblázat: Factor loadings és eigen_v, communality
+table1 <- cbind(Communality = commun2, Eigen_v = eigen, factors)
+table1 <- arrange(table1, desc(F1_rights),desc(F2_research))
+
+table1 %>%
+    kbl() %>%
+    kable_styling()
+
+#Táblázat csak a faktortöltésekről
+table2 <- table1[c("F1_rights","F2_research")]
+
+table2 %>%
+    kbl() %>%
+    kable_styling()
+
+#cumulative variance
+Cum_var <- round(efa2$Vaccounted,2)
+
+
+
 ```
 
 ## Run linear regression
@@ -328,18 +417,33 @@ fa.diagram(efa3)
 Calculate the factor scores.
 
 ```{r}
-scores <- round(efa3$scores, 1)
+scores <- round(efa2$scores, 1)
 ```
 
 Bind factor scores to the original dataset.
 
 ```{r}
-#ezt nem tudtam megoldani
+regr_data <- cbind(scores, tidy_asr)
+regr_data <- regr_data %>% 
+       rename(
+               F1_rights = PA1,
+               F2_research = PA2)
 ```
 
 Run the logistic regression.
 
 ```{r}
+library(readxl)
+lmliberal = lm(liberal~F1_rights+F2_research, data = regr_data)
+summary(lmliberal)
+#Az F érték mutatja, hogy egy szignifikáns elemzést hajtottunk végre, melyben az F1_rights faktor prediktálja szignifikánsan, míg az F2 17% eséllyel nem prediktál értelmezhető mértékben.
+#az R2 sajnos nem túl jó, nem annyira jól illeszkedik a predikció.
 
+plot(lmliberal, pch = 16, col = "blue") #mentve 2 residual ábra, a valós és prediktált között elég angy eltérések vannak.
+plot(lmliberal$residuals, pch = 16, col = "red") #Láthatóan egész randomok a reziduálisok, tehát nincs a háttérben rejtett pattern.Mentve random_residual néven
+
+#Discussion
+
+#Ha újrakezdeném, lehet, hogy kivenném az outlier adatokat és összevetném az eddigi számításokkal. Hogy lássam, mennyit változtat rajta.  Lehet, hogy kivenném az 5. vagy 13. itemet, mert ezek nagyon erősen korrelálnak és tartalmilag is kicsit átfednek. Persze jobb lenne az egészet egy nagyobb mintán elvégezni, ahol akár a hiányzó adatok törlésére is van lehetőség. Itt most túl kevés adat volt ehhez.
 ```
 
