@@ -60,6 +60,8 @@ In your discussion of the findings, briefly interpret the results of the above a
 
 Read the dataset used in this assignment. Pay attention to the extension of the datafile.
 
+*I have added my comments with italic*
+
 *First I have loaded the packages and came back here every time I needed to add one*
 
 ```{r, message=FALSE}

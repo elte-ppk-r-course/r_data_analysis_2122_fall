@@ -57,6 +57,8 @@ Compare the model coefficients and the confidence intervals observed in this ass
 
 Read the datasets used in this assignment. Pay attention to the extensions of the datafiles.
 
+*I have added my comments with italic*
+
 *First I have loaded the packages I am going to need (and came back here when I needed to add)*
 
 ```{r, message=FALSE, warning=FALSE}

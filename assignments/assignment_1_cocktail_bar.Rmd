@@ -31,6 +31,8 @@ Note: There are several different ways to solve these tasks, feel free to come u
 
 Read the cocktail dataset from: <https://github.com/nthun/cocktail-balance> You can also find the codebook there.
 
+*I have added my comments with italic*
+
 *First, I have loaded the packages I am going to need and came back here every time I needed to add something* 
 ```{r, message = FALSE}
 library(dplyr)
