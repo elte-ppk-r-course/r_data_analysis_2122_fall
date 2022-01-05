@@ -203,7 +203,8 @@ Check for outlier values in the model.
 ```{r}
 complex_model %>%
   augment() %>%
-  arrange(desc(.cooksd))
+  arrange(desc(.cooksd)) %>%
+  head()
 ```
 
 *I have found it alright*
