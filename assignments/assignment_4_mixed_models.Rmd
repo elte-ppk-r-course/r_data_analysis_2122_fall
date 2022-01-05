@@ -1,6 +1,6 @@
 ---
 title: "Assignment 5: Mixed models"
-author: "Adel Kovacs"
+author: "Marton Kovacs / Zoltan Kekecs"
 output: html_document
 editor_options: 
   chunk_output_type: console

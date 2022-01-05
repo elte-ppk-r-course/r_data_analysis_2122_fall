@@ -1,6 +1,6 @@
 ---
 title: "Assignment 1: The cocktail bar (data transformation and manipulation)"
-author: "Adel Kovacs"
+author: "Tamas Nagy"
 output: html_document
 editor_options: 
   chunk_output_type: console

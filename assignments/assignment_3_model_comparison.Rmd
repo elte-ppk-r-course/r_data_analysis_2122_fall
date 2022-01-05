@@ -1,6 +1,6 @@
 ---
 title: 'Assignment 3: Model comparison'
-author: "Adel Kovacs"
+author: "Marton Kovacs/Zoltan Kekecs"
 output:
   html_document: default
   pdf_document: default
