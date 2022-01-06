@@ -59,7 +59,12 @@ In your discussion of the findings, briefly interpret the results of the above a
 Read the dataset used in this assignment. Pay attention to the extension of the datafile.
 
 ```{r}
+library(readxl)
+library(tidyverse)
+library(xlsx)
+library(DAAG)
 
+model_comp <- read.csv('D:/PhD/Kurzusok/Adatelemzés R programnyelven/Assignment2/comparemodel.csv')
 ```
 
 ## Data and model diagnostics 
@@ -69,7 +74,8 @@ Read the dataset used in this assignment. Pay attention to the extension of the 
 Run an exploratory data analysis (EDA) to investigate the dataset.
 
 ```{r}
-
+dim(model_comp)
+glimpse(model_comp)
 ```
 
 #### Correct coding errors
@@ -77,6 +83,8 @@ Run an exploratory data analysis (EDA) to investigate the dataset.
 If you find values in the dataset during the EDA, that are not correct based on the provided descriptions of the variables of the dataset please correct them here.
 
 ```{r}
+model <- model_comp %>%
+  mutate(sex = recode_factor(sex, "male" = "1", "female" = "2", "woman" = "2"))
 
 ```
 
@@ -86,6 +94,27 @@ If you find values in the dataset during the EDA, that are not correct based on 
 In order to test the more complex model for outliers and to test the assumptions first build the model.
 
 ```{r}
+complex <- lm(pain~age+sex+STAI_trait+pain_cat+mindfulness+cortisol_saliva+cortisol_serum, data=model)
+summary(complex)
+
+#F-statistics: 2.01, corresponding p-value> .056. Since this p-value is not less than .05, the model is statistically not significant, but it's close to it.
+#Multiple R-squared = .08499. This tells us that 8.49% of the variation in the response variable, y, can be explained by the predictor variable, x.
+
+
+complex2 <-lm(pain~age+sex+STAI_trait+pain_cat+mindfulness+cortisol_saliva+cortisol_serum, data=model_outlier)
+
+summary(complex2)
+
+#F-statistics: 12.39, corresponding p-value: 1.768. Since this p-value is not less than .05, the model is statistically not significant.
+#Multiple R-squared = .3648. This tells us that 36.48% of the variation in the response variable, y, can be explained by the predictor variable, x.
+
+
+complex3 <-lm(pain~age+sex+STAI_trait+pain_cat+mindfulness+cortisol_saliva+cortisol_serum, data=model_outlier2)
+summary(complex3)
+
+#F-statistics: 14.74, corresponding p-value 1.692. Since this p-value is not less than .05, the model is statistically not significant.
+#Multiple R-squared = .4109. This tells us that 41.09% of the variation in the response variable, y, can be explained by the predictor variable, x.
+#We can also see changes in the coefficients. Two from the variables: pain_cat and cortisol_saliva are statistically significant.
 
 ```
 
@@ -95,6 +124,26 @@ Check for outlier values in the model.
 
 ```{r}
 
+plot(complex)
+
+#Based on the plot we can see that row 142 is an outlier and it has high influence.
+
+model_outlier <-model %>%
+  slice(-142)
+
+#I removed the outlier from the model, so now I will make a new version of it.
+
+
+plot(complex2)
+
+#Based on the plot we can see that row 105, 107 and 149 are outliers.
+
+model_outlier2 <- model_outlier %>%
+  slice(-105,-107,-149)
+
+#I removed the outliers, now I will make a new version of the model.
+
+plot(complex3)
 ```
 
 #### Checking assumptions
@@ -102,19 +151,19 @@ Check for outlier values in the model.
 Check the normality assumption.
 
 ```{r}
-
+plot(complex3, 2)
 ```
 
 Check the linearity assumption.
 
 ```{r}
-
+plot(complex3, 1)
 ```
 
 Check the homoscedasticty assumption (homogeneity of variance).
 
 ```{r}
-
+plot(complex3, 3)
 ```
 
 Check the multicollinearity assumption.
@@ -134,13 +183,19 @@ http://blog.minitab.com/blog/understanding-statistics/handling-multicollinearity
 If based on the assumption tests you decide to drop a predictor variable you should do that here. Create your updated model.
 
 ```{r}
+complex4 <-lm(pain~age+sex+STAI_trait+pain_cat+mindfulness+cortisol_saliva, data=model_outlier2)
+summary(complex4)
 
+#I dropped one of the cortisol measures.
+#F-statistics: 17.32, corresponding p-value> 3.872. Since this p-value is not less than .05, the model is statistically not significant.
+#Multiple R-squared = .4109. This tells us that 41.08% of the variation in the response variable, y, can be explained by the predictor variable, x.
+#We can also see changes in the coefficients. Two from the variables: pain_cat and cortisol_saliva are statistically significant.
 ```
 
 #### Checking outliers of the updated model
 
 ```{r}
-
+plot(complex4)
 ```
 
 #### Checking assumptions of the updated model
@@ -148,18 +203,20 @@ If based on the assumption tests you decide to drop a predictor variable you sho
 Normality assumption
 
 ```{r}
+plot(complex4, 2)
 
 ```
 
 Linearity assumption
 
 ```{r}
-
+plot(complex4, 1)
 ```
 
 Homoscedasticty assumption (homogeneity of variance)
 
 ```{r}
+plot(complex4, 3)
 
 ```
 
@@ -174,18 +231,30 @@ Multicollinearity assumption
 Create the simple model and get the results of the model that needs to be reported based on the What to report section.
 
 ```{r}
+simple <- lm(pain~age+sex+pain_cat, data=model)
+summary(simple)
+
+#F-statistics: 2.28, corresponding p-value 0.0813. Since this p-value is not less than .05, the model is statistically not significant..
+#Multiple R-squared = .0420. This tells us that 4.20% of the variation in the response variable, y, can be explained by the predictor variable, x.
+#We can also see in the coefficients that on of the variables: pain_cat is statistically significant.(p=.039)
 
 ```
 
 Create the more complex model based on the results of the model diagnostics. Also, get the results that needs to be reported based on the What to report section.
 
 ```{r}
+complex <- lm(pain~age+sex+STAI_trait+pain_cat+mindfulness+cortisol_saliva+cortisol_serum, data=model)
+summary(complex)
 
+#F-statistics: 2.01, corresponding p-value> .056. Since this p-value is not less than .05, the model is statistically not significant, but it's close to it.
+#Multiple R-squared = .08499. This tells us that 8.49% of the variation in the response variable, y, can be explained by the predictor variable, x.
 ```
 
 Compare the two models.
 
 ```{r}
+anova(complex, simple)
 
+#Based on the table we can see that there is a no significant result (p=0,134). So we should reject the more complex model.
 ```
 
