@@ -55,6 +55,9 @@ spotify.df <- spotify.df %>% mutate(mode = recode(mode,
 str(spotify.df)
 summary(spotify.df)
 
+#NA értékek: összes 10
+colSums(is.na(spotify.df))
+
 #Évek: 1957-2020 
 spotify.df %>% 
   count(track_album_release_date, sort = TRUE)
@@ -64,10 +67,20 @@ spotify.df <- spotify.df %>%
 
 #Genre fajták és számuk
 table(spotify.df$playlist_genre) #6 genre van: edm, latin, pop, r&b, rap, rock. Nagyjából hasonló számban.
+
+#Popularitás eloszlása
+summary(spotify.df$track_popularity)
+
+ggplot(spotify.df) +
+    aes(x = track_popularity) +
+    geom_histogram(bins = 30L) + scale_color_manual(values=wes_palette(n=1, name="GrandBudapest1")) +
+    theme_minimal()
 ```
 
 #Popularitás eloszlások ábrázolása
 ```{r}
+#install.packages("wesanderson")
+library(wesanderson)
 
 #Popularitás alakulása az évek során. A popularitás itt azt jelenti, hogy mennyire volt népszerű.
 spotify.df %>% 
