@@ -9,6 +9,12 @@ editor_options:
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
+library(corrplot)
+library(psych)
+library(QuantPsyc)
+library(MVN)
+library(moments)
+library(dplyr)
 ```
 
 # Introduction
@@ -103,13 +109,16 @@ Talk about the limitations of your study and findings.
 Read the Animal Rights Scale (ARQ) dataset from the 'data/' folder. Pay attention to the extension.
 
 ```{r}
-
+url <- "https://raw.githubusercontent.com/elte-ppk-r-course/r_data_analysis_2122_fall/master/data/assignment_5_dataset.csv"
+animalrights <- read.csv(url)
 ```
 
 ## EDA
 
 ```{r}
-
+dim(animalrights)
+str(animalrights)
+glimpse(animalrights)
 ```
 
 ## Data manipulation
@@ -119,6 +128,9 @@ Recode the sex and party variables as factor type variables with the following l
   * party: 1 - democrat, 2 - republican, 3 - other, 4 - none
 
 ```{r}
+animalrights %>%
+  mutate(sex = recode_factor(sex, "1" = "male", "2" = "female")) %>%
+  mutate(party = recode_factor(party, "1" = "democrat", "2" = "republican", "3" = "other", "4" = "none"))
 
 ```
 
@@ -128,12 +140,14 @@ __Note:__ Remember to only include the variables of the questionnaire that will 
 
 ```{r}
 
+ar <- animalrights %>%
+  select(starts_with("ar"))
 ```
 
 Create the correlation matrix.
 
 ```{r}
-
+cor_ar <- cor(ar)
 ```
 
 ## Visualizing the correlation matrix
@@ -141,7 +155,7 @@ Create the correlation matrix.
 Create a visualization of the results of the correlation matrix.
 
 ```{r}
-
+corrplot(cor_ar)
 ```
 
 ## Test for factorability
@@ -149,18 +163,23 @@ Create a visualization of the results of the correlation matrix.
 Calculate the KMO score.
 
 ```{r}
+KMO(ar)
+#The overall KMO is 0.88, which means that the dataset is adequate for the factor analysis.
 
 ```
 
 ## Test for multivariate normality
 
 ```{r}
+mult.norm(ar)$mult.test
 
 ```
 
 Test for skewness and kurtosis.
 
 ```{r}
+skewness(ar)
+kurtosis(ar)
 
 ```
 
@@ -170,6 +189,9 @@ Create a scree plot to help the decision on how many factors to include.
 
 ```{r}
 
+scree(ar, factors = FALSE)
+
+#Based on the scree plot we can see that the recommended factor number is 6, but I would go with 5 because the 6th factor goes a bit lower compared to the line.
 ```
 
 ## Run the factor analysis
@@ -177,30 +199,39 @@ Create a scree plot to help the decision on how many factors to include.
 Run the factor analysis with the chosen number of factors.
 
 ```{r}
-
+fa_ar <- fa(ar, factors = 5, rotate= "varimax")
+fa_ar
 ```
 
 Sort the communality scores in decreasing order.
 
 ```{r}
-
+sort(fa_ar$communality, decreasing = TRUE)
 ```
 
 Calculate the mean communality scores.
 
 ```{r}
 
+mean(fa_ar$communality)
+
+#The mean communality scores are 0.295.
+
 ```
 
 Show the factor loadings for the chosen factor structure.
 
 ```{r}
+fa_ar$loadings
 
 ```
 
 Visualize the factor structure.
 
 ```{r}
+fa.diagram(fa_ar)
+
+#Based on the factor analysis I would remove the following items: ar19, ar21, ar24, ar16 and ar18.
 
 ```
 
@@ -209,7 +240,7 @@ Visualize the factor structure.
 Calculate the factor scores.
 
 ```{r}
-
+factor.scores(fa_ar)
 ```
 
 Bind factor scores to the original dataset.
@@ -221,6 +252,7 @@ Bind factor scores to the original dataset.
 Run the logistic regression.
 
 ```{r}
-
+logisticr <- glm()
+#I was not sure how to do the last part properly.
 ```
 
