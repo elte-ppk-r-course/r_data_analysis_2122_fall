@@ -17,7 +17,7 @@ This assignment is related to the previous lab assignment concerning perioperati
 
 Your research paper on the effect of the psychological and hormonal predictors of postoperative pain was so successful, that you managed to secure research funding for a multi-site replication study. Here your collaborators collect data in the same way you did in the original study at 20 different hospital sites. The goal of the study is to increase the generalizability of your findings. You would like to assess the model coefficients and the overall predictive efficiency of the predictors in your model.
 
-As a reminder, here is the protocol for data collection: “You have collected data from adults who were scheduled to undergo surgical extraction of the third mandibular molar (wisdom tooth surgery). Patients filled out a form in the waiting room before their surgery. The form contained questions about their sex, age, and weight, and psychological questionnaires assessing anxiety, pain catastrophizing, and mindfulness (see descriptions below). You also got blood samples and saliva samples from participants in the waiting room 5 minutes before their operations to determine the serum (a component of the blood) and salivary cortisol levels of participants. Participants were contacted 5 hours after the surgery to see how much pain they were experiencing. The __level of pain__ at that moment was recorded using a numerical rating scale using a __scale of 0 to 10__, where 0 means “no pain” and 10 means “worst pain I can imagine”. 
+As a reminder, here is the protocol for data collection: “You have collected data from adults who were scheduled to undergo surgical extraction of the third mandibular molar (wisdom tooth surgery). Patients filled out a form in the waiting room before their surgery. The form contained questions about their sex, age, and weight, and psychological questionnaires assessing anxiety, pain catastrophizing, and mindfulness (see descriptions below). You also got blood samples and saliva samples from participants in the waiting room 5 minutes before their operations to determine the serum (a component of the blood) and salivary cortisol levels of participants. Participants were contacted 5 hours after the surgery to see how much pain they were experiencing. The __level of pain__ at that moment was recorded using a numerical rating scale using a __scale of 0 to 10__, where 0 means "no pain" and 10 means "worst pain I can imagine"?. 
 
 __The State Trait Anxiety Inventory:__ T measures trait anxiety on a scale of 20 to 80, higher scores mean higher anxiety. Anxiety has been found in many studies to positively correlate with the level of pain experienced. This is __variable STAI_trait__ in the dataset. 
 
@@ -25,7 +25,7 @@ __The Pain Catastrophizing Scale__ measures the extent of pain catastrophizing, 
 
 __The Mindful Attention Awareness Scale (MAAS)__ measures dispositional mindfulness, which may be described as a tendency to turn attention to present-moment experiences in an open, non-judgemental way. The MAAS total score ranges from 1 to 6 (an average of the item scores), with higher scores representing higher dispositional mindfulness. Trait mindfulness has been theorized to serve as a protective factor against pain, as the individual would be more objective about their pain experience and tend to associate less discomfort, despair, and hopelessness to the pain-related sensations. This is __variable mindfulness__ in the dataset.
 
-__Cortisol__ is a stress hormone associated with acute and chronic stress. Cortisol levels are thought to be positively associated with pain experience. Cortisol can be __measured from both blood and the saliva__, although, serum cortisol is often regarded in medical research as more reliably related to stress (serum is a component of the blood plasma). These are __variables cortisol_serum__, and __cortisol_saliva__ in the dataset.”
+__Cortisol__ is a stress hormone associated with acute and chronic stress. Cortisol levels are thought to be positively associated with pain experience. Cortisol can be __measured from both blood and the saliva__, although, serum cortisol is often regarded in medical research as more reliably related to stress (serum is a component of the blood plasma). These are __variables cortisol_serum__, and __cortisol_saliva__ in the dataset."
 
 # Datasets
 
@@ -37,7 +37,7 @@ First, fit a linear mixed model to estimate postoperative pain on datafile A. Yo
 
 Also, compute the variance explained by the fixed effect predictors using marginal R^2^, and the variance explained by the fixed and random effect terms combined using conditional R^2^. Now use the model coefficients obtained on data file A to predict pain in datafile B.
 
-__IMPORTANT:__ Do not fit the regression models on data file B (don’t re-train your models), just use the regression equation you derived based on datafile A. These regression equations should be applied on the new data (datafile B), to predict pain.
+__IMPORTANT:__ Do not fit the regression models on data file B (don't re-train your models), just use the regression equation you derived based on datafile A. These regression equations should be applied on the new data (datafile B), to predict pain.
 
 Now compute the variance explained by the model on datafile B. You can do this by using the formula: __1 - (RSS / TSS) = R^2__. Compare this R^2^ to the marginal and conditional R^2^ values computed for the model on datafile A. 
 
@@ -57,23 +57,239 @@ Compare the model coefficients and the confidence intervals observed in this ass
 
 Read the datasets used in this assignment. Pay attention to the extensions of the datafiles.
 
-```{r}
+*I have added my comments with italic*
 
+*First I have loaded the packages I am going to need (and came back here when I needed to add)*
+
+```{r, message=FALSE, warning=FALSE}
+library(dplyr)
+library(tidyr)
+library(readr)
+library(stringr)
+library(ggplot2)
+library(performance)
+library(see)
+library(broom)
+library(haven)
+library(lme4)
+library(lmerTest)
+library(MuMIn)
+library(nlme)
+library(ggpubr)
+```
+
+I loaded and checked the datasets I have downloaded from the data files from the [assignment github](https://github.com/elte-ppk-r-course/r_data_analysis_2122_fall/tree/master/data) and also checked them (I was not able to access raw data on github, every browser I have tried downloaded it)
+
+```{r}
+path = file.path("/Users/kovacsjenifer/assignment/assignment_4_dataset_A.sav")
+dataset_A = read_sav(path)
+View(dataset_A)
+
+path2 = file.path("/Users/kovacsjenifer/assignment/assignment_4_dataset_B.sav")
+dataset_B = read_sav(path2)
+View(dataset_B)
 ```
 
 ## Exploratory data analysis
 
 Run an exploratory data analysis (EDA) to investigate the dataset.
 
-```{r}
+*Knowing the accepted values for the variables, I have checked a summary to spot any extraordinary data*
 
+```{r}
+dataset_A %>%
+  summary()
+```
+
+*I used ggplot to find any outliers*
+*I have also checked the normality of the variables*
+
+```{r}
+ggplot(dataset_A, aes(age, pain)) +
+  geom_point()
+ggdensity(dataset_A$age, xlab = "normality of age")
+ggdensity(dataset_A$pain, xlab = "normality of pain")
+```
+
+*IQ does not supposed to significantly change with age, so I am looking for a flat line here, with the mean of 100*
+
+```{r, message=FALSE}
+ggplot(dataset_A, aes(age, IQ)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE)
+ggdensity(dataset_A$IQ, xlab = "normality of IQ")
+```
+
+*I realized some quite extreme values, but they do not have a big effect on the flat line, and the normality is as it should be, so I have left them in the dataset*
+
+*I checked other variables for outliers*
+
+```{r}
+ggplot(dataset_A, aes(age, weight)) +
+  geom_point()
+ggdensity(dataset_A$weight, xlab = "normality of weight")
+```
+
+```{r}
+ggplot(dataset_A, aes(age, household_income)) +
+  geom_point()
+ggdensity(dataset_A$household_income, xlab = "normality of household income")
+```
+
+*I checked sex and recoded it to handle as a factor*
+
+```{r}
+is.factor(dataset_A$sex)
+dataset_A <- 
+  dataset_A %>%
+  mutate(sex = as.factor(sex))
+
+levels(dataset_A$sex)
 ```
 
 ## Correct coding errors
 
 If you find values in the dataset during the EDA, that are not correct based on the provided descriptions of the variables of the dataset please correct them here.
 
-```{r}
+*There was an extremly low weight (33.8), I've filtered it out*
 
+*I also found a "Male" in the variable sex, I have recoded it to fit the others*
+
+```{r}
+dataset_A <- dataset_A %>%
+   mutate(sex = replace(sex, sex == "Male", "male")) %>%
+  filter(weight > 40)
+
+
+dataset_A %>%
+  summary()
 ```
 
+*I have repeated it with dataset B*
+
+```{r}
+dataset_B %>%
+  summary()
+```
+
+```{r}
+ggplot(dataset_B, aes(age, pain)) +
+  geom_point()
+ggdensity(dataset_B$pain, xlab = "normality of pain")
+ggdensity(dataset_B$age, xlab = "normality of age")
+```
+
+```{r, message=FALSE}
+ggplot(dataset_B, aes(age, IQ)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE)
+ggdensity(dataset_B$IQ, xlab = "normality of IQ")
+```
+
+```{r}
+ggplot(dataset_B, aes(age, weight)) +
+  geom_point()
+ggdensity(dataset_B$weight, xlab = "normality of weight")
+```
+
+```{r}
+ggplot(dataset_B, aes(age, household_income)) +
+  geom_point()
+ggdensity(dataset_B$household_income, xlab = "normality of household income")
+```
+
+```{r}
+dataset_B <- dataset_B %>%
+  mutate(sex = as.factor(sex))
+```
+
+*I have not found any outliers or coding errors*
+
+### _I fitted the **fixed effect model** from assignment 3_
+*I also check assumptions*
+
+```{r}
+model_A <- lm(pain ~ age + sex + STAI_trait + pain_cat + mindfulness + cortisol_serum, data = dataset_A)
+check_model(model_A)
+summary(model_A)
+
+model_A %>%
+  augment() %>%
+  arrange(desc(.cooksd)) %>%
+  head()
+
+r.squaredGLMM(model_A)
+```
+
+*model_A is a significant model (F(6,192)=17.74, p = 0.004), with significant variables in it like age (p < 0.001), sex (p = 0.039), mindfulness (p = 0.012) and cortisol serum (p < 0.001).*
+
+_Then I included the **random effect of hospitals** and checked the assumptions again_
+
+```{r}
+mixed_model_A <- lmer(pain ~ age + sex + STAI_trait + pain_cat + mindfulness + cortisol_serum + (1 | hospital), data = dataset_A)
+check_model(mixed_model_A)
+```
+
+*The coefficients and the confidence intervals for the complex fixed effect model A are listed here:*
+
+```{r}
+summary(model_A)
+```
+```{r}
+confint(model_A)
+```
+
+*The coefficients and the confidence intervals for the complex mixed effect model A are listed here:*
+
+```{r}
+summary(mixed_model_A)
+```
+```{r}
+confint(mixed_model_A)
+```
+
+## *Comparing the complex fixed and the complex mixed models*
+
+```{r, message=FALSE}
+compare <- anova(mixed_model_A, model_A)
+compare
+```
+
+_Seems like **the complex mixed model is a significantly better choice (p < 0.001)**_
+
+*Next I am getting marginal R^2 and conditional R^2*
+
+```{r, warning=FALSE}
+r.squaredGLMM(mixed_model_A)
+```
+
+_The marginal R^2 is 0.316, meaning **the variance explained by the fixed factors of the model is 31.6%**._
+
+_The conditional R^2 is 0.435, meaning **the variance explained by the model containing fixed and random effects is higher, 43.5%**._
+
+*To run my model on the data in dataset B, I made sure that the variables are named the same. (They are)*
+
+*I predicted values in B using the mixed model I have gotten from dataset A*
+
+```{r}
+predict_on_B <- predict(mixed_model_A, dataset_B, allow.new.levels = TRUE)
+predict_on_B
+```
+
+*Task: Now compute the variance explained by the model on datafile B. You can do this by using the formula: __1 - (RSS / TSS) = R^2__. Compare this R^2^ to the marginal and conditional R^2^ values computed for the model on datafile A.*
+
+```{r}
+predict(mixed_model_A,dataset_B, allow.new.levels = TRUE) - dataset_B$pain
+
+sum(predict_on_B^2)
+```
+
+```{r}
+glance(model_A, dataset_B)
+```
+
+*The fitted fixed effect model on database A predicts 33.7% of the pain's variance in dataset B (adj R^2 = 0.337).*
+
+*Compared to the modelA fitted on dataset A it seems to be lower than both the marginal (0.35), and the conditional (0.35).*
+
+*It suggest that model_A predicts better on dataset A than on dataset B*

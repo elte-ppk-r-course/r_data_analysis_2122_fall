@@ -16,10 +16,20 @@ You will have to create 3 plots based on the datasets and instructions detailed 
 -   Data manipulation (e.g. dplyr, tidyr), and working with factors (forcats)
 -   Data visuzlization (ggplot2)
 
+*I have added my comments with italic*
+
+*I have added some extra packages*
+
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = FALSE)
 library(tidyverse)
 library(tidytuesdayR)
+library(forcats)
+library(ggplot2)
+library(dplyr)
+library(tidyr)
+library(scales)
+library(RColorBrewer)
 ```
 
 ## Task 1: Climbing expeditions
@@ -30,8 +40,41 @@ The 2020-09-22 TidyTueday datasets are about climbing expeditions. From the thre
 -   The bars are ordered by the sum of all expeditions (use `fct_reorder()`).
 -   The bar colors use the viridis palette and light theme.
 
-```{r}
+```{r, message=FALSE}
+tt_data <- tt_load("2020-09-22")
+expeditions <- tt_data$expeditions
+```
 
+*I made sure the variables I need are handled as factors*
+```{r}
+expeditions$season <- as.factor(expeditions$season)
+expeditions$peak_name <- as.factor(expeditions$peak_name)
+```
+
+*I have checked the peaks*
+
+```{r}
+fct_count(expeditions$peak_name)
+```
+
+*I choosed the 15 most popular and dropped the others*
+
+```{r}
+expeditions_to_plot <- expeditions %>%
+  mutate(peak_name = fct_lump_n(peak_name, 15)) %>%
+  filter (peak_name != "Other") %>%
+  count (peak_name, season)
+```
+
+*Lastly I made the plot using the instructions*
+
+```{r}
+ggplot(expeditions_to_plot, aes(x = n, y = fct_reorder(peak_name, n, .fun = sum), fill = season)) +
+  geom_col () +
+  theme_light () +
+  scale_fill_viridis_d() +
+  labs (title = "The 15 most popular peaks stacked by season of expedition", x = "Number of expeditions", y = NULL) +
+  theme (legend.position = "bottom")
 ```
 
 ## Task 2: PhDs awarded
@@ -44,9 +87,43 @@ Notes:
 -   To make the x axis breaks pretty, use `scales::pretty_breaks()`, to make the y axis labels comma formatted, use `scales::comma_format()`.
 -   The line size is 1.2, the colors are from the brewer "Dark2" palette. The theme is set to minimal.
 
-```{r}
+*First I have loaded the data and checked it*
 
+```{r, message=FALSE}
+tt_data <- tt_load("2019-02-19")
+phd_by_field <- tt_data$phd_by_field
+phd_by_field
 ```
+
+*Then I have changed some variable types to work with them*
+
+```{r}
+phd_by_field$broad_field <- as.factor(phd_by_field$broad_field)
+phd_by_field$n_phds <- as.integer(phd_by_field$n_phds)
+```
+
+*After I made a tibble about the variables I want to plot*
+
+```{r, message=FALSE}
+sum_by_group <- phd_by_field %>%
+  filter(n_phds != "NA") %>%
+  group_by(broad_field, year) %>%
+  summarize (Count =sum(n_phds))
+sum_by_group
+```
+
+*Lastly I made the plot*
+
+```{r}
+ggplot(sum_by_group, aes(x = year, y = Count, color = broad_field)) +
+  geom_line (size = 1.2) +
+  scale_x_continuous(breaks = pretty_breaks(6)) +
+  scale_y_continuous(label = comma_format()) +
+  scale_colour_brewer(palette = "Dark2", name = "Broad field")+
+  theme_minimal() +
+  labs(title = "Number of awarded Ph.D.-s in the US by year") 
+```
+
 
 ## Task 3: Commute in the US
 
@@ -58,6 +135,47 @@ Notes:
 -   Both axis scales are log transformed and the labels comma formatted, using `scales::comma_format()`
 -   The point size is 2, . The theme is set to light.
 
-```{r}
+*First I have loaded the data*
 
+```{r, message=FALSE}
+tt_data <- tt_load("2019-11-05")
+commute <- tt_data$commute
 ```
+
+*Then I changed the type of the variables I want to work with*
+
+```{r}
+commute$mode <- as.factor(commute$mode)
+commute$state_abb <- as.factor(commute$state_abb)
+```
+
+*After I made a dataframe with the variables and values I am interested in*
+
+```{r, message=FALSE}
+commute_to_plot <- 
+  commute %>%
+  group_by(mode, state_abb, state_region) %>%
+  summarize (Count =sum(n))
+```
+
+*To have all columns I need, I made it wider*
+
+```{r}
+  commute_to_plot_wider <- pivot_wider(commute_to_plot, names_from = "mode", values_from = "Count")
+```
+
+*Lastly I made the plot. Seems like I have a bit different data on, but I assume that maybe the data was updated since then*
+
+```{r}
+ggplot(commute_to_plot_wider, aes(x=Walk, y=Bike, color=state_region)) +
+  geom_point (size= 2) +
+  geom_text(aes(label=state_abb), colour = "black") +
+  theme_light() +
+  scale_x_log10 (label = comma_format())+
+  scale_y_log10 (limits = c(100, 100000), label = comma_format()) +
+  labs(title = "Title number of people walking vs. biking to work in each USA state") +
+  xlab("Number of ppl walking to work (log N)") +
+  ylab("Number of ppl biking to work (log N)") +
+  scale_colour_discrete(name="State region")
+```
+

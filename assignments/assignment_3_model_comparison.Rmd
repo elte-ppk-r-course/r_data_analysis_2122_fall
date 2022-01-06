@@ -1,8 +1,10 @@
 ---
-title: "Assignment 3: Model comparison"
+title: 'Assignment 3: Model comparison'
 author: "Marton Kovacs/Zoltan Kekecs"
-output: html_document
-editor_options: 
+output:
+  html_document: default
+  pdf_document: default
+editor_options:
   chunk_output_type: console
 ---
 
@@ -18,9 +20,9 @@ Your first study in this area is related to assessing the influence of trait and
 
 # Procedures and measures
 
-Use the data file called ‘assignment_3_dataset’, from the 'data/' folder.
+Use the data file called 'assignment_3_dataset', from the 'data/' folder.
 
-You have collected data from 160 adults who were scheduled to undergo surgical extraction of the third mandibular molar (wisdom tooth surgery). Patients filled out a form in the waiting room before their surgery. The form contained questions about their sex, age, and weight, and psychological questionnaires assessing anxiety, pain catastrophizing, and mindfulness (see descriptions below). You also got blood samples and saliva samples from participants in the waiting room 5 minutes before their operations to determine the serum (a component of the blood) and salivary cortisol levels of participants. Participants were contacted 5 hours after the surgery to see how much pain they were experiencing. The __level of pain__ at that moment was recorded using a numerical rating scale using a __scale of 0 to 10__, where 0 means “no pain” and 10 means “worst pain I can imagine”. 
+You have collected data from 160 adults who were scheduled to undergo surgical extraction of the third mandibular molar (wisdom tooth surgery). Patients filled out a form in the waiting room before their surgery. The form contained questions about their sex, age, and weight, and psychological questionnaires assessing anxiety, pain catastrophizing, and mindfulness (see descriptions below). You also got blood samples and saliva samples from participants in the waiting room 5 minutes before their operations to determine the serum (a component of the blood) and salivary cortisol levels of participants. Participants were contacted 5 hours after the surgery to see how much pain they were experiencing. The __level of pain__ at that moment was recorded using a numerical rating scale using a __scale of 0 to 10__, where 0 means "no pain" and 10 means "worst pain I can imagine". 
 
 __The State Trait Anxiety Inventory:__ T measures trait anxiety on a scale of 20 to 80, higher scores mean higher anxiety. Anxiety has been found in many studies to positively correlate with the level of pain experienced. This is __variable STAI_trait__ in the dataset.
 
@@ -38,15 +40,15 @@ To answer this research question you will __need to compare two models__ (with a
 
 # What to report
 
-As usual, before you can interpret your model, you will need to run data and model diagnostics. First, check the variables included in the more complex model (age, sex, STAI, pain catastrophizing, mindfulness, and cortisol measures as predictors, and pain as an outcome) for __coding errors__, and the model itself for __influential outliers__ (for example using Cook’s distance). Furthermore, check the final model to see if the __assumptions of linear regression hold true__, that is, __normality__ (of the residuals), __linearity__ (of the relationship), __homogeneity of variance__ (also called homoscedasticity) and that there is no excess __multicollinearity__ (“uncorrelated predictors” in Navarro’s words). If you find anything amiss during these checks, make the appropriate decision or correction and report your findings and actions in your report. 
+As usual, before you can interpret your model, you will need to run data and model diagnostics. First, check the variables included in the more complex model (age, sex, STAI, pain catastrophizing, mindfulness, and cortisol measures as predictors, and pain as an outcome) for __coding errors__, and the model itself for __influential outliers__ (for example using Cook's distance). Furthermore, check the final model to see if the __assumptions of linear regression hold true__, that is, __normality__ (of the residuals), __linearity__ (of the relationship), __homogeneity of variance__ (also called homoscedasticity) and that there is no excess __multicollinearity__ ("uncorrelated predictors" in Navarro's words). If you find anything amiss during these checks, make the appropriate decision or correction and report your findings and actions in your report. 
 
 __Note:__ If you do any changes, such as exclude cases, or exclude predictors from the model, you will have to re-run the above checks for your final data and model.
 
 Report the results of the simpler model and the more complex model. For both models you should report the model test statistics (adj.R2, F, df, and p value). Also, report the statistics describing the coefficients of the predictors in a table format (unstandardized regression coefficients and 95% confidence intervals, standardized regression coefficients (B and Beta values), and p values).
 
-Write up the regression equation of the more complex model in the form of 𝑌 = 𝑏0 + 𝑏1 ∗ X1 + 𝑏2 ∗ X2 +…+ bn * Xn, in which you use the actual regression coefficients of your models. (b0 stands for the intercept and b1, b2 … bn stand for the model coefficients for each of the predictors, and X1, X2, … Xn denote the predictors).
+Write up the regression equation of the more complex model in the form of ???? = ????0 + ????1 ??? X1 + ????2 ??? X2 +...+ bn * Xn, in which you use the actual regression coefficients of your models. (b0 stands for the intercept and b1, b2 ... bn stand for the model coefficients for each of the predictors, and X1, X2, .. Xn denote the predictors).
 
-Compare the two models in terms of how much variance they explain of pain’s variability in the sample. Report Akaike information criterion (AIC) for both models and the F test statistic and p value of the likelihood ratio test comparing the two models.
+Compare the two models in terms of how much variance they explain of pain's variability in the sample. Report Akaike information criterion (AIC) for both models and the F test statistic and p value of the likelihood ratio test comparing the two models.
 
 # What to discuss
 
@@ -58,8 +60,34 @@ In your discussion of the findings, briefly interpret the results of the above a
 
 Read the dataset used in this assignment. Pay attention to the extension of the datafile.
 
-```{r}
+*I have added my comments with italic*
 
+*First I have loaded the packages and came back here every time I needed to add one*
+
+```{r, message=FALSE}
+library(dplyr)
+library(forcats)
+library(tidyr)
+library(readr)
+library(stringr)
+library(readxl)
+library(openxlsx)
+library(ggplot2)
+library(performance)
+library(see)
+library(patchwork)
+library(broom)
+library(sjPlot)
+library(sjmisc)
+library(sjlabelled)
+library(lmtest)
+library(ggpubr)
+```
+
+*I could not load it from github, each browser I have tried downloaded it instead of showing the raw data, so this is how I load it from my PC*
+
+```{r}
+pain_experience <- read.xlsx("/Users/kovacsjenifer/assignment/assignment_3_dataset.xlsx")
 ```
 
 ## Data and model diagnostics 
@@ -68,16 +96,94 @@ Read the dataset used in this assignment. Pay attention to the extension of the 
 
 Run an exploratory data analysis (EDA) to investigate the dataset.
 
-```{r}
+*Looking for coding errors or strong trends I have mainly did it with plots. I have paired some variables, plotted them and looked for extraordinary values*
 
+*It was also good for seeing some possible correlations, so I added the lines*
+
+```{r}
+pain_experience %>%
+  summary()
+```
+
+```{r, message=FALSE}
+ggplot(pain_experience, aes(age, pain)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE)
+```
+
+*Age and IQ should be a flat line, since IQ does not supposed to change by age and supposed to have a mean at 100*
+
+```{r, message = FALSE}
+ggplot(pain_experience, aes(age, IQ)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE)
+```
+
+```{r}
+ggplot(pain_experience, aes(age, weight)) +
+  geom_point()
+```
+
+```{r}
+ggplot(pain_experience, aes(age, household_income)) +
+  geom_point()
+```
+
+*I have handled the varibale I wanted to work with as factor and also checked the levels and values*
+
+```{r}
+is.factor(pain_experience$sex)
+as.factor(pain_experience$sex)
+```
+
+*I have looked at normal distributions*
+
+```{r}
+ggdensity(pain_experience$IQ, xlab = "normality of IQ")
+```
+
+*This one seems to be not okay, since I still have to filter out a coding error*
+
+```{r}
+ggdensity(pain_experience$pain, xlab = "normality of pain")
+```
+
+```{r}
+ggdensity(pain_experience$household_income, xlab = "normality of household income")
+```
+
+```{r}
+ggdensity(pain_experience$age, xlab = "normality of age")
 ```
 
 #### Correct coding errors
 
 If you find values in the dataset during the EDA, that are not correct based on the provided descriptions of the variables of the dataset please correct them here.
 
-```{r}
+*What I found:*
 
+*There was an outlier in the variable pain (=50), I've filtered it out*
+
+*I've looked at IQ distribution and it seems like the quite outliers does not have a big effect on the linear line, so I've let them in the data*
+
+*There was an extremely low weight (33.8), I've filtered it out*
+
+*I have found "woman" instead of "female", I changed that*
+
+```{r}
+pain_experience <- pain_experience %>%
+  mutate(sex = replace(sex, sex == "woman", "female")) %>%
+  filter (pain < 11) %>%
+  filter (weight > 40)
+
+pain_experience %>%
+  summary()
+```
+
+*I am checking pain's normality again*
+
+```{r}
+ggdensity(pain_experience$pain, xlab = "normality of pain - filtered")
 ```
 
 ### Model diagnostics
@@ -86,7 +192,8 @@ If you find values in the dataset during the EDA, that are not correct based on 
 In order to test the more complex model for outliers and to test the assumptions first build the model.
 
 ```{r}
-
+complex_model <- lm(pain ~ age + sex + STAI_trait + pain_cat + mindfulness + cortisol_serum + cortisol_saliva, data=pain_experience)
+summary(complex_model)
 ```
 
 #### Checking for influential outliers
@@ -94,28 +201,33 @@ In order to test the more complex model for outliers and to test the assumptions
 Check for outlier values in the model.
 
 ```{r}
-
+complex_model %>%
+  augment() %>%
+  arrange(desc(.cooksd)) %>%
+  head()
 ```
+
+*I have found it alright*
 
 #### Checking assumptions
 
-Check the normality assumption.
+*I have checked them in once*
 
 ```{r}
-
+check_model(complex_model)
 ```
+
+Check the normality assumption.
+
+*Normality - I found it right*
 
 Check the linearity assumption.
 
-```{r}
-
-```
+*I also found it right*
 
 Check the homoscedasticty assumption (homogeneity of variance).
 
-```{r}
-
-```
+*I also found it right*
 
 Check the multicollinearity assumption.
 
@@ -125,67 +237,113 @@ Some info about VIF:
 https://statisticalhorizons.com/multicollinearity
 http://blog.minitab.com/blog/understanding-statistics/handling-multicollinearity-in-regression-analysis
 
-```{r}
-
-```
+*I have only found one error: cortisol from blood and cortisol from saliva of course correlated and violating multicollinearity assumption (VIF > 5), I am dropping saliva (no specific reason why this and not the other)*
 
 ### Making decision based on model diagnostics
 
 If based on the assumption tests you decide to drop a predictor variable you should do that here. Create your updated model.
 
 ```{r}
-
+complex_model2 <- lm(pain ~ age + sex + STAI_trait + pain_cat + mindfulness + cortisol_serum, data=pain_experience)
+summary(complex_model2)
+aic_complex <- AIC(complex_model2)
+aic_complex
+tab_model(complex_model2)
 ```
 
 #### Checking outliers of the updated model
 
 ```{r}
-
+complex_model2 %>%
+  augment() %>%
+  arrange(desc(.cooksd))
 ```
 
 #### Checking assumptions of the updated model
 
-Normality assumption
+*Also did it in once*
 
 ```{r}
-
+check_model(complex_model2)
 ```
+
+Normality assumption
 
 Linearity assumption
 
-```{r}
-
-```
-
 Homoscedasticty assumption (homogeneity of variance)
-
-```{r}
-
-```
 
 Multicollinearity assumption
 
-```{r}
+*I have found them alright*
 
-```
+*The updated complex model is overall significant (F(6,151) = 13.33, p < 0.001, AIC = 528.673), with significant predictor variables like pan catastrophizing (p = 0.003) and cortisol serum (p < 0.001).*
 
 ## Model comparison
 
 Create the simple model and get the results of the model that needs to be reported based on the What to report section.
 
 ```{r}
+simple_model <- lm(pain ~ age + sex, data = pain_experience)
+simple_model
+tab_model(simple_model)
+aic_simple <- AIC(simple_model)
+```
 
+We have a significant model **(F(2,156) = 7.511, p < 0.001, AIC = 574.196)**, where age is a significant main effect (p<0.001), but not gender.
+
+The explained variance of the dependent variable is **adj R2 = 0.07614**, so it is 7,6%, which we hope will be better in the more complex model. 
+
+The confidence interval for age is [-0.13, -0.04] which does not contain 0, and [-0.35, 0.56] for sex which does. 
+
+**The regression equation: Y = 8.49145 + -0.08906 * x1 + 0.10287 * x2**
+
+Calculating "by hand", for a 40 years old male it should be 5.03192 level of pain. Checking it, turns out okay (probably it knows all other decimals, that is why it is not exactly the same)
+
+```{r}
+8.49145 - 0.08906 * 40 + 0.10287 * 1
+
+example <- tibble(age=40, sex="male")
+predict(simple_model, example)
 ```
 
 Create the more complex model based on the results of the model diagnostics. Also, get the results that needs to be reported based on the What to report section.
 
 ```{r}
-
+complex_model2 <- lm(pain ~ age + sex + STAI_trait + pain_cat + mindfulness + cortisol_serum, data=pain_experience)
+summary(complex_model2)
+tab_model(complex_model2)
 ```
+
+*My model explained 32 % of the variability of experienced pain. **adj R2 = 0.32**. Two of my predictors came out significant, pain catastrophizing (p = 0.003), and cortisol serum (p < 0.001)*
+
+*The more complex model seems more accurate to predict pain (simple model adj R2 was 0.076)*
+
+*The complex model was overall significant (F(6,151)=13.33, p < 0.001), but age does not come out significantly important here (p = 0.139)*
+
+*The equation of the more complex model is:*
+
+**Y = 1.99957 + -0.03488 * x1 +  0.30051 * x2 + -0.01229 * x3 + 0.08487 * x4 + -0.14827 * x5 + 0.53193 * x6**
 
 Compare the two models.
 
 ```{r}
-
+compare <- anova(simple_model, complex_model2)
+compare
 ```
 
+OR
+
+```{r}
+compare2 <- lrtest(simple_model, complex_model2)
+compare2
+aic_simple - aic_complex
+```
+
+*The complex model is significantly better, than the simple one (F(4)=15.221, p < 0.001)*
+
+*The  likelihood ratio test also suggest to use the complex model, X^2(4) = 53.523, p < 0.001*
+
+*The more complex model predicts outcome (pain) with higher efficiency, changes adj R2 from 0.076 to 0.32, explaining 24,4 % more variance of outcome variable. Still not all predictors seem to be significant, so it would be more efficient to include less predictors in the model.*
+
+*I have found a great article [here](http://faculty.washington.edu/skalski/classes/QERM597/papers_xtra/Burnham%20and%20Anderson.pdf) (p. 271) about delta AIC, that says "The (delta)-i are easy to interpret and allow a quick strength-of-evidence comparison and ranking of candidate hypotheses or models. The larger the (delta)i, the less plausible is fitted model i (the first one in the comparison) as being the best approximating model in the candidate set". That suggest that the second model is significantly better than the first*
