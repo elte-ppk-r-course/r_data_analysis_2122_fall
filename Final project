@@ -12,7 +12,7 @@ library(Hmisc)
 library(corrplot)
 library(car)
 
-#####In this report i am going to examine how investment (var. spend_per_resident_points) affect different amenities in (var. amenities_points) parks. I also examine whether parks are rather dog-friendly (var. dogpark_points) or child-friendly (var. playground_points)
+#####In this report i am going to examine how investment (var. spend_per_resident_points) affect different amenities (var. amenities_points) in parks. I also examine whether parks are rather dog-friendly (var. dogpark_points) or child-friendly (var. playground_points)
 #####################
 #STEPS:
   #1. Create hypothesis
