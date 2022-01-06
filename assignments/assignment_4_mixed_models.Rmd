@@ -217,6 +217,8 @@ model_A %>%
   augment() %>%
   arrange(desc(.cooksd)) %>%
   head()
+
+r.squaredGLMM(model_A)
 ```
 
 *model_A is a significant model (F(6,192)=17.74, p = 0.004), with significant variables in it like age (p < 0.001), sex (p = 0.039), mindfulness (p = 0.012) and cortisol serum (p < 0.001).*
@@ -286,7 +288,8 @@ sum(predict_on_B^2)
 glance(model_A, dataset_B)
 ```
 
-*The fitted model on database A predicts 33.7% of the pain's variance in dataset B (adj R^2 = 0.337).*
+*The fitted fixed effect model on database A predicts 33.7% of the pain's variance in dataset B (adj R^2 = 0.337).*
 
-*Compared to the modelA fitted on dataset A it seems to be higher than the marginal (0.316), but lower than the conditional (0.435).*
+*Compared to the modelA fitted on dataset A it seems to be lower than both the marginal (0.35), and the conditional (0.35).*
 
+*It suggest that model_A predicts better on dataset A than on dataset B*

@@ -242,8 +242,8 @@ cocktail_bar_cheatsheet[is.na(cocktail_bar_cheatsheet)] <- ""
 *Here it is*
 
 ```{r}
-print(cocktail_bar_cheatsheet)
-View(cocktail_bar_cheatsheet)
+cocktail_bar_cheatsheet %>%
+  select(1, 10:71)
 ```
 
 

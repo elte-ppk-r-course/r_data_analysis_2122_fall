@@ -40,7 +40,7 @@ The 2020-09-22 TidyTueday datasets are about climbing expeditions. From the thre
 -   The bars are ordered by the sum of all expeditions (use `fct_reorder()`).
 -   The bar colors use the viridis palette and light theme.
 
-```{r}
+```{r, message=FALSE}
 tt_data <- tt_load("2020-09-22")
 expeditions <- tt_data$expeditions
 ```
@@ -89,7 +89,7 @@ Notes:
 
 *First I have loaded the data and checked it*
 
-```{r}
+```{r, message=FALSE}
 tt_data <- tt_load("2019-02-19")
 phd_by_field <- tt_data$phd_by_field
 phd_by_field
@@ -104,7 +104,7 @@ phd_by_field$n_phds <- as.integer(phd_by_field$n_phds)
 
 *After I made a tibble about the variables I want to plot*
 
-```{r}
+```{r, message=FALSE}
 sum_by_group <- phd_by_field %>%
   filter(n_phds != "NA") %>%
   group_by(broad_field, year) %>%
@@ -119,7 +119,7 @@ ggplot(sum_by_group, aes(x = year, y = Count, color = broad_field)) +
   geom_line (size = 1.2) +
   scale_x_continuous(breaks = pretty_breaks(6)) +
   scale_y_continuous(label = comma_format()) +
-  scale_colour_brewer(palette = "Dark2")+
+  scale_colour_brewer(palette = "Dark2", name = "Broad field")+
   theme_minimal() +
   labs(title = "Number of awarded Ph.D.-s in the US by year") 
 ```
@@ -137,7 +137,7 @@ Notes:
 
 *First I have loaded the data*
 
-```{r}
+```{r, message=FALSE}
 tt_data <- tt_load("2019-11-05")
 commute <- tt_data$commute
 ```
@@ -151,7 +151,7 @@ commute$state_abb <- as.factor(commute$state_abb)
 
 *After I made a dataframe with the variables and values I am interested in*
 
-```{r}
+```{r, message=FALSE}
 commute_to_plot <- 
   commute %>%
   group_by(mode, state_abb, state_region) %>%

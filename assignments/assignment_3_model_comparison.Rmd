@@ -342,7 +342,7 @@ aic_simple - aic_complex
 
 *The complex model is significantly better, than the simple one (F(4)=15.221, p < 0.001)*
 
-*The  likelihood ratio test also suggest to use the complex model, Chisq(4) = 53.523, p < 0.001*
+*The  likelihood ratio test also suggest to use the complex model, X^2(4) = 53.523, p < 0.001*
 
 *The more complex model predicts outcome (pain) with higher efficiency, changes adj R2 from 0.076 to 0.32, explaining 24,4 % more variance of outcome variable. Still not all predictors seem to be significant, so it would be more efficient to include less predictors in the model.*
 
