@@ -1,5 +1,5 @@
 ---
-title: "Birdbath_final assignment"
+title: "Spotify"
 output: html_document
 ---
 
@@ -9,9 +9,9 @@ library(tidyverse)
 ```
 
 #Intro
-Final assignment: Bird bath
+Final assignment: Spotify
 
-The 2021-08-31 TidyTueday dataset is about song popularity on Spotify. There is only one dataset, it is called `commute`. Reproduce the plot below!
+The 2021-08-31 TidyTueday dataset is about song popularity on Spotify. This is a 2020 dataset, the years mean only the appearance of the song. There is only one dataset, it is called `commute`. Reproduce the plot below!
 
 The data has not been screened on youtube.
 
@@ -60,14 +60,14 @@ summary(spotify)
 colSums(is.na(spotify))
 
 #Évek: 1957-2020 
-spotify <- spotify.df %>% 
-  rename(Year = track_album_release_date)
+spotify <- spotify  %>% 
+    rename(Year = track_album_release_date)
 
 #Genre fajták és számuk
 table(spotify$playlist_genre) #6 genre van: edm, latin, pop, r&b, rap, rock. Nagyjából hasonló számban.
 
 #Popularitás értékek alakulása
-summary(spotify.df$track_popularity)
+summary(spotify.df$track_popularity) #medián: 45 ez fontos lesz még később
 
 #Látható, hogy a nagyon kiugróan sokan adtak 0 értékelést
 ggplot(spotify) +
@@ -76,6 +76,45 @@ ggplot(spotify) +
     theme_minimal()
 
 spotify %>% filter(track_popularity < 1) 
+
+#Ebből sajnos nem tiszta, hogy a 0 érték az abból adódik-e,hogy az adott dalt nem hallgatták. Hiszen nem tudjuk, hogy a popularity érték egy átlag-e?
+
+describe(spotify$track_popularity)
+
+IQR(spotify$track_popularity)
+Tmin = 24-(1.5*38) 
+Tmax = 62+(1.5*38)
+spotify$track_popularity[which(spotify$track_popularity < Tmin | spotify$track_popularity > Tmax)] #IQR alapján is 0 az outlier
+
+#Én végül úgy döntöttem, hogy ezt az outliert én szeretném moderálni. Mivel ez a 0 érték nem köthető a megjelenés évéhez sem (ahogy reméltem), ezért capping módszert választottam megoldásként:
+
+
+qn = quantile(spotify$track_popularity, c(0.05, 0.95), na.rm = FALSE)
+df = within(spotify, { track_popularity = ifelse(track_popularity < qn[1], qn[1], track_popularity)
+track_popularity = ifelse(track_popularity > qn[2], qn[2], track_popularity)})
+
+ggplot(df) +
+    aes(x = track_popularity) +
+    geom_histogram(bins = 30L) + 
+    theme_minimal()
+
+#Ez is megtöri az eloszlást picit.Más megoldást nem tudtam kitalálni, úgyhogy random módon kitöröltem 2500 sort, amikben a popularity = 0.
+library(data.table)
+DT <- data.table(spotify)
+spotify <- DT[-sample(which(spotify$track_popularity==0), 2500)]
+
+ggplot(spotify) +
+    aes(x = track_popularity) +
+    geom_histogram(bins = 30L) + 
+    theme_minimal()  
+
+#Outlier ellenőrzés:
+describe(spotify$track_popularity) #1Q: 31, 3Q:63
+
+IQR(spotify$track_popularity) #32
+Tmin = 31-(1.5*32) 
+Tmax = 63+(1.5*32)
+spotify$track_popularity[which(spotify$track_popularity < Tmin | spotify$track_popularity > Tmax)] #még mindig a 0, de az eloszlás egész tűrhető, így hagyom
 ```
 
 #Popularitás eloszlások ábrázolása
@@ -148,11 +187,11 @@ library(car)
 library(onewaytests)
 
 #Levene's test, ami nem követeli meg a normális eloszlást
-homog.test(track_popularity ~ mode, data = spotify, method = "Bartlett")
+bartlett <- homog.test(track_popularity ~ mode, data = spotify, method = "Bartlett")
 bartlett$p.value #nem sérül a szóráshomogenitás
 
 #Elvégeztem a robosztus tesztet is, ami alapján szintén nem sérül
-homog.test(track_popularity ~ mode, data = spotify, method = "Levene")
+homog.test(track_popularity ~ mode, data = spotify, method = "Levene") # p=0.61
 
 ```
 
@@ -185,22 +224,22 @@ dw<-durbinWatsonTest(model)
 ```{r}
 #A model tehát:
 model <- lm(track_popularity ~ danceability+energy+acousticness+instrumentalness+valence, data=data)
-summary(model)
-#A valence nem magyarázza szingifikánsan a popularitást. Ki is veszem, és újra futtatom:
+summary(model) # popularity = 46.2 + 8.1*danceability + -8*energy +3.1*acousticness + -14.9*instrumentalness + 1.4*valence
 
-model_new <- lm(track_popularity ~ danceability+energy+acousticness+instrumentalness, data=data)
 
-#R-squared
+#R-squared adjusted: Az érték azt jelzi, hogy a modellünk nem magyarárra igazán nagy részét a kimeneti változónak.
 
 #RSE
-sigma(model)/mean(data$track_popularity)
-
-#Értelmezések
-
+sigma(model)/mean(data$track_popularity) #elég magas az érték, ezek szerint a modell elég pontatlan a jelen minta alapján
 ```
 
 #Discussion
 ```{r}
+#Értelmezések: a popularitást leginkább a táncolhatóság, az energiaszint, az akusztikusság, az instrumentáltság és a valencia határozza meg. Problémás a modellünk, mert nem amgyarázza a variancia nagy részét és elég pontatlan is a használt mintán. Az outlierek és a reziduális hibák korrelációja is állhat e-mögött. Az is fontos, hogy nagyon eltérő skálákon mérték a vizsgált prediktor változókat. Lehet, hogy ezek standardizálása is javítana a pontosságon.
+
+#Én úgy gondolom, hogy érdemes lenne egy kisebb mintán megnézni, hogy mi határozza emg leginkább a popularitást. Hiszen ahogy láthattuk, a zenei ízlés változott az évek során. Elképzelhető, hogy ez a változó mögöttesen de meghatározta az én elemzésemet is. Így vagy genre hatását lenne érdemes a továbbiakban kibontani, vagy leszűkíteni egy adott "korszakra" a mintát és azon belül vizsgálódni.
+
+
 
 ```
 
