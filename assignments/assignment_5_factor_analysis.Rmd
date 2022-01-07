@@ -129,10 +129,6 @@ tidy_asr <- asr_raw %>%
     mutate_if(is.numeric, function(x) ifelse(is.na(x), median(x, na.rm = T), x))
 
 
-#Otlier adatok azonosítása 
-boxplot(tidy_asr[c(1:28)])
-outliers <- psych::outlier(data)
-
 #látható, hogy több outlier is van. Mivel EFA-t szeretnék csinálni, ezért ezeket az adatokat most benne hagyom - de az eredményt ezek tükrében fogom értelmezni.
 
 #Nem derül ki az adatok leírásából, hogy a fordított itemek már fordítva vannak-e benne az adathalmazban.
@@ -143,6 +139,10 @@ hist(tidy_asr[c(1:28)])
 
 data <- tidy_asr[1:154, 1:28]
 df <- data.frame(tidy_asr)
+
+#Otlier adatok azonosítása 
+boxplot(tidy_asr[c(1:28)])
+outliers <- psych::outlier(data)
 
 #adat jellemzői összesítve
 psych::describe(data)

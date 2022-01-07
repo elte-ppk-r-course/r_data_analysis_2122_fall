@@ -33,6 +33,7 @@ library(ggcorrplot)
 library(kableExtra)
 library(knitr)
 library(psych)
+library(Hmisc)
 library(RColorBrewer)
 
 ```
@@ -45,36 +46,36 @@ spotify.df$track_album_release_date <- substr(spotify.df$track_album_release_dat
 
 
 #Hangnem (mode) változó átkódolása: major =dúr, minor =moll
-spotify.df <- spotify.df %>% mutate(mode = recode(mode, 
+spotify <- spotify.df %>% mutate(mode = recode(mode, 
                                  "1" = "major",
                                  "0" = "minor"))
 
 ```
 #EDA
 ```{r}
-str(spotify.df)
-summary(spotify.df)
+str(spotify)
+summary(spotify)
 
-#NA értékek: összes 10
-colSums(is.na(spotify.df))
+#NA értékek: összes 10, charachter változókban, melyekkel nem szeretnék dolgozni egyébként sem (trackname,artist)
+colSums(is.na(spotify))
 
 #Évek: 1957-2020 
-spotify.df %>% 
-  count(track_album_release_date, sort = TRUE)
-
-spotify.df <- spotify.df %>% 
+spotify <- spotify.df %>% 
   rename(Year = track_album_release_date)
 
 #Genre fajták és számuk
-table(spotify.df$playlist_genre) #6 genre van: edm, latin, pop, r&b, rap, rock. Nagyjából hasonló számban.
+table(spotify$playlist_genre) #6 genre van: edm, latin, pop, r&b, rap, rock. Nagyjából hasonló számban.
 
-#Popularitás eloszlása
+#Popularitás értékek alakulása
 summary(spotify.df$track_popularity)
 
-ggplot(spotify.df) +
+#Látható, hogy a nagyon kiugróan sokan adtak 0 értékelést
+ggplot(spotify) +
     aes(x = track_popularity) +
-    geom_histogram(bins = 30L) + scale_color_manual(values=wes_palette(n=1, name="GrandBudapest1")) +
+    geom_histogram(bins = 30L) + 
     theme_minimal()
+
+spotify %>% filter(track_popularity < 1) 
 ```
 
 #Popularitás eloszlások ábrázolása
@@ -83,7 +84,7 @@ ggplot(spotify.df) +
 library(wesanderson)
 
 #Popularitás alakulása az évek során. A popularitás itt azt jelenti, hogy mennyire volt népszerű.
-spotify.df %>% 
+spotify %>% 
     sample_n(1000) %>%
     ggplot() + 
     aes(x=Year, y=track_popularity, color=mode) + 
@@ -93,7 +94,7 @@ spotify.df %>%
     scale_x_discrete(name = NULL, breaks = scales::pretty_breaks(n= 7))
 
 #Popularitás genre alapján, az évek során
-spotify.df %>% 
+spotify %>% 
     sample_n(1000) %>%
     ggplot() + 
     aes(x=Year, y=track_popularity, color= playlist_genre) + 
@@ -107,38 +108,98 @@ spotify.df %>%
 Választott bemeneti változók:
 ```{r}
 # Dataset for LM
-data <- subset(spotify.df, select=c(3,4,7,8, 10,12:18))
+data <- subset(spotify, select=c(3,7,8, 10,12:17))
 
-#outlier adatok /Cook, Mahabolis
-boxplot(data[c(1, 3:12)]) # ez nagyon csúnya, de segít elindulni, hogy mit érdemes megnézni
-ggplot(data) +
-    aes(x = "", y = track_popularity) +
-    geom_boxplot(fill = "#0c4c8a") +
-    theme_minimal()
-
-#ötlet:
-df.m <- melt(df, id.var = "Label")
-
-ggplot(data = df.m, aes(x=Label, y=value)) + 
 ```
 
 
 #Előfeltételek 1: kollinearitás/multikoll. kizárása
 ```{r}
+cordata <- cor(data)
+cordata <- round(cordata,2)
+rcorr<-rcorr(as.matrix(data))
+
+pvalues <- round(rcorr$P, 2) #minden észlelt korreláció szingifikáns, ám többségük gyenge.
+
+#Az alábbi változók közötti közepes erősségű kapcsolat van, de mivel ez sem problémás szint (0.8-0.9 fölötti), ezért bent hagytam.
+# energy - acousticness: -0.54
+# energy - loudness: 0.68
+
+library(viridis)
+library(corrplot)
+ggcorrplot(cordata, 
+           hc.order = FALSE, 
+           type = "upper",
+           lab = FALSE) + scale_fill_viridis()
+
+corrplot(cordata, method = "color",  
+         type = "lower", order = "original", 
+         addCoef.col = "black", 
+         tl.col = "darkblue", tl.srt = 45,
+         sig.level = 0.01,  
+         diag = FALSE) #ábrák mentve a mappába is
 
 ```
 
-#Előfeltételek2: Szóráshomogenitás - ábra: point és line
+#Előfeltételek2: Szóráshomogenitás
 ```{r}
+#install.packages("onewaytests")
+library(car)
+library(onewaytests)
+
+#Levene's test, ami nem követeli meg a normális eloszlást
+homog.test(track_popularity ~ mode, data = spotify, method = "Bartlett")
+bartlett$p.value #nem sérül a szóráshomogenitás
+
+#Elvégeztem a robosztus tesztet is, ami alapján szintén nem sérül
+homog.test(track_popularity ~ mode, data = spotify, method = "Levene")
 
 ```
 
-#Előfeltételek3: Lineritás prediktorok és kimeneti változó között/ Ellenőrizhető az elemzés során a predikált értékek és reziduális értékek, vagy a predikált értékek és kimeneti változó közötti kapcsolat plottolásával (elég az egyiket kikérni)
+#Előfeltételek3: Lineritás prediktorok és kimeneti változó között
 ```{r}
+#Külön végeztem el a változókra, mert nagyon kiolvashatatlan volt egyben a sok ábra
+plot(lm(track_popularity ~ danceability, data = data)) 
+plot(lm(track_popularity ~ energy, data = data)) 
+plot(lm(track_popularity ~ loudness, data = data)) #nem teljesül
+plot(lm(track_popularity ~ speechiness, data = data)) #nem teljesül
+plot(lm(track_popularity ~ acousticness, data = data)) 
+plot(lm(track_popularity ~ instrumentalness, data = data))
+plot(lm(track_popularity ~ liveness, data = data)) #nem teljesül
+plot(lm(track_popularity ~ valence, data = data)) 
+plot(lm(track_popularity ~ tempo, data = data)) #nem teljesül
+
+
+#A residual vs fitt ábrák mentve mappába /plot, 1 ábrák. A végső számolásba nem kerültek bele az alábbi változók: loudness, speechiness, liveness, tempo
 
 ```
 
 #Reziduális hibák ne korreláljanak / Durbin-Watson test
+```{r}
+model <- lm(track_popularity ~ danceability+energy+acousticness+instrumentalness+valence, data=data)
+dw<-durbinWatsonTest(model) 
+#Látom, hogy ez nem teljesül, szingifkáns p értéket kapunk. Ugyanakkor ezen a szinten már nem látom át, hogy ezt pontosan hogyan is lehetne megoldani (valamiféle lag korrekcióval). Ha ez most egy éles kutatás lenne, akkor valószínűleg tanácsot kérnék. Most azonban ettől eltekintek, és lefuttatom a végső elemzést.
+```
+
+#Többszörös lineáris regresszió futtatása
+```{r}
+#A model tehát:
+model <- lm(track_popularity ~ danceability+energy+acousticness+instrumentalness+valence, data=data)
+summary(model)
+#A valence nem magyarázza szingifikánsan a popularitást. Ki is veszem, és újra futtatom:
+
+model_new <- lm(track_popularity ~ danceability+energy+acousticness+instrumentalness, data=data)
+
+#R-squared
+
+#RSE
+sigma(model)/mean(data$track_popularity)
+
+#Értelmezések
+
+```
+
+#Discussion
 ```{r}
 
 ```
