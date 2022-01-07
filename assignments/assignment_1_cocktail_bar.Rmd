@@ -34,7 +34,7 @@ Read the cocktail dataset from: <https://github.com/nthun/cocktail-balance> You 
 ```{r}
 cocktail_data <- read.table('https://raw.githubusercontent.com/andr3ahor/r_data_analysis_2122_fall/master/data/cocktail_data.tsv', header = TRUE, sep = "\t")
 
-# Nem tudtam kezelni a ' és # karaktereket, ezért kitöröltem őket az eredeti data fájlból.
+# I couldn't handle ' and # charachters, therefore I deleted them manually from the original file.
 ```
 
 ## 2. Transform the data table and clean the ingredient variable!
@@ -45,16 +45,16 @@ The ingredients are currently in a single cell for each cocktail. It would be be
 #Tidyr package install és load.
 library(tidyr)
 
-#Sorokra bontottam az ingredients oszlopot a <br/> mentén.
+#Separate rows for ingredients, along <br/> 
 cocktail_data <- separate_rows(cocktail_data, ingredients, sep = "<br/>", convert = FALSE)
 
-#ja meg ugye van sima <br> 
+#and with <br> 
 cocktail_data <- separate_rows(cocktail_data, ingredients, sep = "<br>", convert = FALSE) 
 
-#Az oszlopok neveit az alábbi sorral lehet megnézni
+#I checked the column names
 colnames(cocktail_data, do.NULL =FALSE)
 
-#Kivettem az ingredientsből az 'oz''dash/es''drop/s' és 'bps' adatokat.
+#I elimited from ingredients column the 'oz''dash/es''drop/s' and 'bps' 
 cocktail_data <- data.frame(lapply(cocktail_data, function(x) {gsub(".*oz ", "", x)}))
 cocktail_data <- data.frame(lapply(cocktail_data, function(x) {gsub(".*drop ", "", x)}))
 cocktail_data <- data.frame(lapply(cocktail_data, function(x) {gsub(".*drops ", "", x)}))
@@ -62,7 +62,7 @@ cocktail_data <- data.frame(lapply(cocktail_data, function(x) {gsub(".*dash ", "
 cocktail_data <- data.frame(lapply(cocktail_data, function(x) {gsub(".*dashes ", "", x)}))
 cocktail_data <- data.frame(lapply(cocktail_data, function(x) {gsub(".*bsp ", "", x)}))
 
-#Töröltem a zárójeles adatokat is az ingredients-ből
+#I deleted () as well
 library(stringr)
 cocktail_data$ingredients <- str_remove(cocktail_data$ingredients, pattern = "\\(.*")
 ```
@@ -73,16 +73,16 @@ Before opening the bar, you need to find a reliable supplier that has all the in
 
 ```{r}
 library(tidyr)
-#Adattisztítás: egy sort szét kell választani az 'or' mentén
+#Cleaning data: I had to separate rows in ingredients along 'or' 
 cocktail_data <- separate_rows(cocktail_data, ingredients, sep = "or", convert = FALSE)
 
-#Adattisztítás: szóközök törlése a szavak végéről és elejéről
+#Cleanin data: deleting dashes from the start and of the ends of rows 
 cocktail_data$ingredients <- trimws(cocktail_data$ingredients, which = c("both"))
 
-#Unique, nem üres adatok azonosítása 
+#Unique, not empty data
 cocktailunique <- unique(cocktail_data$ingredients[cocktail_data$ingredients != ""])
 
-#ABC sorend kialakítása
+#ABC sorting
 sorted_ingr <- sort(cocktailunique)
 
 
@@ -93,7 +93,7 @@ sorted_ingr <- sort(cocktailunique)
 How many different ingredients you will need?
 
 ```{r}
-#összegzem a sorted_ingr változót, így 60-at kapok
+#Summary of sorted_ingr variable = 60
 summary(sorted_ingr)
 
 ```
@@ -103,7 +103,7 @@ summary(sorted_ingr)
 What are the 10 most frequently used ingredients? If there are ties, you can list more than 10.
 
 ```{r}
-#A 10 leggyakoribb, de többet lekértem, mert sok volt a döntetlen.
+#The 10 most frequent ingredients. I asked for more as there were a lot of ties.
 top10 <- sort(table(cocktail_data$ingredients), decreasing = TRUE) [1:25]
 ```
 
@@ -112,7 +112,7 @@ top10 <- sort(table(cocktail_data$ingredients), decreasing = TRUE) [1:25]
 Count the number of ingredients and filter all the cocktails that has that many.
 
 ```{r}
-#Mivel az összetevők soronként vannak, és egy koktélhoz így több sor is tartozik, megnéztem, hogy melyik koktél név a leggyakoribb. 6 egyformán gyakori nevet találtam.
+#As 1 coctail has multiple rows, I checked which coctail name is the most frequent. I found 6 equally frequent name, these have the most ingredients.
 complex_cocktails <- sort(table(cocktail_data$name), decreasing = TRUE) [1:6]
 ```
 
@@ -121,7 +121,7 @@ complex_cocktails <- sort(table(cocktail_data$name), decreasing = TRUE) [1:6]
 Count all cocktails with only one ingredient, and
 
 ```{r}
-#25 rare ingredient van
+#There are 25 rare ingredient 
 rare_ingr <- sort(table(cocktail_data$ingredients), increasing = TRUE) [1:28]
 ```
 
@@ -136,7 +136,7 @@ rare_cocktail <- cocktail_data %>% filter(ingredients == "absinthe"|ingredients 
 ```{r}
 notrare_cocktail <- cocktail_data %>% filter(ingredients != "absinthe"|ingredients !="Absolut Citron vodka" |ingredients !="agar-clarified grapefruit juice" |ingredients !="Amer Picon" |ingredients !="centrifuge-clarified grapefruit juice" |ingredients != "Cherry Herring" |ingredients !="cranberry juice" |ingredients !="crem de violette" |ingredients !="Demerara syrup" |ingredients !="Dolin dry vermouth" |ingredients !="Drambuie" |ingredients !="Fernet Branca" |ingredients !="heavy cream" |ingredients !="Hellfire bitters" |ingredients !="Lairds Applejack Bottled in Bond" |ingredients !="Old Tom gin" |ingredients !="pisco" |ingredients !="quinine simple syrup" |ingredients !="saline" |ingredients !="simple" |ingredients != "sloe gin" |ingredients !="sugard 80-proof rum" |ingredients !="sugared 100-proof rye" |ingredients !="white crÂŹme de cacao" |ingredients !="white mezcal" |ingredients !="ange juice" |ingredients !="apple brandy" |ingredients !="blanco tequila")
 
-#a végső cocktail név lista ismétlések nélkül
+#This is the final coctail name list, without duplications. 
 notrare <- unique(notrare_cocktail$name, incomparables = FALSE)
 ```
 
@@ -150,11 +150,13 @@ tribble(~name, ~Lime, ~`White rum`, ~`Cane sugar`, ~`Coca-cola`, ~Mint, ~Soda,
         "Cuba Libre", "X", "X", "", "X","","",
         "Mojito", "X", "X", "", "", "X", "X") %>% 
     relocate(name, sort(names(.)))
-#Koktélok azonosítása = 55, ennyi sor kell
+#Coctails= we need 55 rows
 unique(cocktail_data$name)
 
-#Hozzávalók azonosítása = 61, ennyi oszlop kell
+#Ingredients = we need 61 columns
 unique(cocktail_data$ingredients)
+
+#I was not able to find hot to create this table.
 ```
 
 ```{r}

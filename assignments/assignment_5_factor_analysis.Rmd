@@ -114,38 +114,37 @@ library(Hmisc)
 str(asr_raw)
 summary(asr_raw)
 
-#NA azonosítása
+#NA detection
 library(dplyr)
 library(visdat)
 which(is.na(data_frame), arr.ind=TRUE)
 sum(is.na(asr_raw)) #11 hiányzó adat
 colSums(is.na(asr_raw)) #oszlponokénti hiányzók
 
-#Vizuálisan --> feltehetően randomok a hiányzó adatok, kevés adat hiányzik (0.2%)
+#Let's see the NA  --> there is only 0.2% missing, they are probly random NA's. 
 visdat::vis_miss(asr_raw)
 
-#NA adatok pótlása mediánnal, nem akartam törölni, mert az adatvesztéssel jár. Ez pedig egy sokak által ajánlott lehetőség. Megtehettem volna, hogy a kalkulációkból kihagyom őket (na.rm = TRUE), de minden faktor esetében ugyanannyi adattal szerettem volna dolgozni.
+#I choose to replace NAs with the median. i didn't want to loose any data, and this seemed a good idea. I could have left out them during the calculations (na.rm = TRUE), but I wanted to use the factors with even data input. 
 tidy_asr <- asr_raw %>% 
     mutate_if(is.numeric, function(x) ifelse(is.na(x), median(x, na.rm = T), x))
 
 
 
+#I couldn't figure out wether the turned items has been turned already.
 
-#Nem derül ki az adatok leírásából, hogy a fordított itemek már fordítva vannak-e benne az adathalmazban.
-
-#Eloszlások
-par(mar=c(1,1,1,1)) #mert ezt íRta ki előtte: Error in plot.new() : figure margins too large
+#Visuals
+par(mar=c(1,1,1,1)) #i got this message: Error in plot.new() : figure margins too large
 hist(tidy_asr[c(1:28)])
 
 data <- tidy_asr[1:154, 1:28]
 df <- data.frame(tidy_asr)
 
-#Otlier adatok azonosítása 
+#Otlier data detection 
 boxplot(tidy_asr[c(1:28)])
 outliers <- psych::outlier(data)
-#látható, hogy több outlier is van. Mivel EFA-t szeretnék csinálni, ezért ezeket az adatokat most benne hagyom - de az eredményt ezek tükrében fogom értelmezni.
+#There are several outliers. I want to do EFA, therefore I left these data in my analysis. However I will measure my analysis based on this.
 
-#adat jellemzői összesítve
+#The informations gathered on data
 psych::describe(data)
 ```
 
@@ -156,9 +155,8 @@ Recode the sex and party variables as factor type variables with the following l
   * party: 1 - democrat, 2 - republican, 3 - other, 4 - none
 
 ```{r}
-recoded <- tidy_asr %>% mutate(sex = recode(sex, 
-                                 "1" = "male",
-                                 "2" = "female"))
+recoded <- tidy_asr %>% mutate(sex = recode(sex, "1" = "male","2" = "female"))
+
 recoded <- tidy_asr %>% mutate(party = recode(party, 
                                  "1" = "democrat",
                                  "2" = "republican",
@@ -183,7 +181,7 @@ Create the correlation matrix.
 asr.cor <- cor(data) 
 asr.cor <- round(asr.cor, 2)
 asr.rcorr<-rcorr(as.matrix(data))
-valtozo <- round(asr.rcorr$P, 2) #látható, hogy helyenként nincs szignifikáns korreláció, de a legtöbb érték esetében igen
+valtozo <- round(asr.rcorr$P, 2) #There are some insignificant correlations, but the most are significant. 
 ```
 
 ## Visualizing the correlation matrix
@@ -206,7 +204,7 @@ corrplot(asr.cor, method = "color",
          tl.col = "darkblue", tl.srt = 45,
          sig.level = 0.01,  
          diag = FALSE)
-#elmentve szebbre a assignments/assignment_5 mappába
+#Saved the plots into assignments/assignment_5 folder
 ```
 
 ## Test for factorability
@@ -214,17 +212,17 @@ corrplot(asr.cor, method = "color",
 Calculate the KMO score.
 
 ```{r}
-# library(psych) kell hozzá
+# library(psych) must be used
 
 asr_kmo <- KMO(data)
 print(asr_kmo)
-#overall MSA = 0.88 felett, legalacsonyabb: ar28= 0.77 --> ez így elég jó
+#overall MSA = 0.88, smallest: ar28= 0.77 --> All in all the KMO is quite good.
 
-#megnéztem azért, hogy ar28 nélkül lenne-e változás, de nincs
+#I chekced, but removing item 28 would not change it.
 asr_kmo2 <- KMO(data[c(1:27)])
 print(asr_kmo)
 
-#benne hagyom mindegyik itemet
+#I choose to leave every item inside.
 ```
 
 ## Test for multivariate normality
@@ -235,7 +233,7 @@ library(mvnormtest)
 #install.packages("MVN")
 library(MVN)
 
-#Mardia’s MVN tes
+#Mardia’s MVN test
 result <- mvn(data, mvnTest = "mardia")
 result$multivariateNormality
 
@@ -246,11 +244,11 @@ result.hz$multivariateNormality
 # Shapiro-Wilk
 result.sh <- mshapiro.test(t(data))
 
-#mindkét teszt az MVN hiányát jelzi, a normalitás sérül. Nem csinálhatunk maximum likelyhood elemzést.
+#All tests show that there is no MVN, the normality is corrupted. Therefore I won't be able to do maximum likelyhood analysis.
 
-#Bartlett
+#Bartlett, as my last chance
 bartlett <- cortest.bartlett(data)
-#a p érték megfelelőnek mutatkozik, elvégezhető a faktoranalízis, mert van valamiféle korreláció.
+#p value is godd, the EFA can be done as there is some level of correlation. 
 ```
 
 Test for skewness and kurtosis.
@@ -259,8 +257,7 @@ Test for skewness and kurtosis.
 #install.packages("QuantPsyc")
 library(QuantPsyc)
 normality <- mult.norm(data)$mult.test
-print(normality) #sérül a a ferdeség és a csúcsosság is. Mivel azonban a KMO nagyon bíztató, és a Bartlett is, elvégeztem a faktor analízist.
-
+print(normality) #Skewness and peaks are corrupted. But the KMO is quite godd, and the Bartlett's as well - therefore I proceed with the analysis.
 
 ```
 
@@ -270,13 +267,13 @@ Create a scree plot to help the decision on how many factors to include.
 
 ```{r}
 scree(data)
-#ábra mentve az assingment_5 mappába
-#az ábra alapján 1, 2 vagy esetleg 6 faktort ajánl az alapján, hogy hol van az eigenvalue vonal és hol törik meg a vonal.
+#Plot saved to assingment_5 folder
+#It shows that there could be 1, 2 or 6 cators based on where the line brakes. 
 
-#Emiatt csináltam egy paralell scree plotot is, ez is mentve
+#I also made a paralell scree plot - saved to folder.
 fa.parallel(data)
 
-#A szimulált adatok alapján 2 vagy 3 faktor ajánlott. Én ezek alapján a 3 faktoros felépítést fogom elkészíteni.
+#It shows that 2 or 3 factors could be there. Based on this i choose 3 factor model. 
 ```
 
 ## Run the factor analysis
@@ -287,7 +284,7 @@ Run the factor analysis with the chosen number of factors.
 #install.packages("GPArotation")
 library(GPArotation)
 
-# 3 faktorral, oblimin forgatással, mert korrelációt várok a faktorok között
+# 3 factors, oblimin rotation - because I expect correlation between factors.
 efa3 <- fa(data,
           nfactors = 3,
           fm="pa",
@@ -295,7 +292,7 @@ efa3 <- fa(data,
 
 
 
-fa.diagram(efa3) #látható, hogy a 2. faktor igen instabil és kevés item van rajta. Ezért megcsináltam a 2 faktoros változatot is.
+fa.diagram(efa3) #The 2. factor is rather unstable, and has few items. Therefore I redo the model with 2 factors - according to scree plot simulation.
 
 efa2 <- fa(data,
           nfactors = 2,
@@ -304,9 +301,9 @@ efa2 <- fa(data,
 
 fa.diagram(efa2)
 
-#Ez lesz a végső struktúra, megfelelőek a faktortöltések is.Egyedül a 8. tétel nem illeszkedik semleyik faktorra, ezt én kivenném a végső kérdőívből.
+#This is much better, the factor loadings are good. Only the 8th item is left out from these two factors. I would eliminate it from the final questionnaire.  
 
-#mentve assignment_5 mappába az ábrák
+#Visuals saved to assignment 5 folder.
 
 ```
 
@@ -341,12 +338,12 @@ load <- efa2$loadings
 fac1 = efa2$loadings[,1]
 fac2 = efa2$loadings[,2]
 
-
+#these are the factor loadings
 factors <- data.frame(F1_rights = fac1 , 
            F2_research = fac2)
 factors <- round(factors,3) 
 
-#Láthatóvá tettem, hogy melyik item melyik faktorban, mekkora töltéssel van jelen.
+#I checked which item, how big loading have in wich factor. 
 factors[1,][which.min(factors[1,])] <- ""
 factors[2,][which.min(factors[2,])] <- ""
 factors[3,][which.min(factors[3,])] <- ""
@@ -387,11 +384,11 @@ library(kableExtra)
 
 fa.diagram(efa2) #final names?
 
-#Faktorok nevei
+#Here are them:
 colnames(efa2$loadings) <- c("F1:Attitude to animal's rights", "F2:Attitude to animal research")
-final <- fa.diagram(efa2) #mentve final_efa2 képben
+final <- fa.diagram(efa2) #saved as final_efa2 in folder
 
-#Final táblázat: Factor loadings és eigen_v, communality
+#Final table: Factor loadings és eigen_v, communality
 table1 <- cbind(Communality = commun2, Eigen_v = eigen, factors)
 table1 <- arrange(table1, desc(F1_rights),desc(F2_research))
 
@@ -399,7 +396,7 @@ table1 %>%
     kbl() %>%
     kable_styling()
 
-#Táblázat csak a faktortöltésekről
+#Also table2 with the facto lodaings
 table2 <- table1[c("F1_rights","F2_research")]
 
 table2 %>%
@@ -434,17 +431,19 @@ regr_data <- regr_data %>%
 Run the logistic regression.
 
 ```{r}
+#Predict the liberality by F1 and F2
 library(readxl)
 lmliberal = lm(liberal~F1_rights+F2_research, data = regr_data)
 summary(lmliberal)
-#Az F érték mutatja, hogy egy szignifikáns elemzést hajtottunk végre, melyben az F1_rights faktor prediktálja szignifikánsan, míg az F2 17% eséllyel nem prediktál értelmezhető mértékben.
-#az R2 sajnos nem túl jó, nem annyira jól illeszkedik a predikció.
 
-plot(lmliberal, pch = 16, col = "blue") #mentve 2 residual ábra, a valós és prediktált között elég angy eltérések vannak.
-plot(lmliberal$residuals, pch = 16, col = "red") #Láthatóan egész randomok a reziduálisok, tehát nincs a háttérben rejtett pattern.Mentve random_residual néven
+#The F shows, that our analysis were significant in which the F1_rights predicts significantly, while the F2 doesn't predict significantly with  a 17% chance.
+#The R2 is enough good, the predictions doesn't really fit.
+
+plot(lmliberal, pch = 16, col = "blue") #saved 2 residual picture. There is a big difference between real and predicted.  
+plot(lmliberal$residuals, pch = 16, col = "red") #It seems that the residuals are quite random, there is no hidden pattern. I saved this by the random_residual name in the folder.
 
 #Discussion
 
-#Ha újrakezdeném, lehet, hogy kivenném az outlier adatokat és összevetném az eddigi számításokkal. Hogy lássam, mennyit változtat rajta.  Lehet, hogy kivenném az 5. vagy 13. itemet, mert ezek nagyon erősen korrelálnak és tartalmilag is kicsit átfednek. Persze jobb lenne az egészet egy nagyobb mintán elvégezni, ahol akár a hiányzó adatok törlésére is van lehetőség. Itt most túl kevés adat volt ehhez.
+#If I would approach again, I would remove or handle better the outlier data. I would compare that model with this one for the differences. I would probably remove the 5th or 13th items as they correalte heavily. They have very similar meaning. Also it would be great to repeat the analysis on a bigger sample. Then I would have a better chance to remove NAs without loosing too much information. 
 ```
 

@@ -40,12 +40,12 @@ library(RColorBrewer)
 
 #Tidy
 ```{r}
-#A nagy adathalmazból kiválasztottam azokat a változókat, amikkel dolgozni szeretnék.
+#I chosose those (mostly numeric) variables, that i would like to check more closely. 
 spotify.df <- subset(spotify_songs, select=c(2,3,4,7,8, 10,12:23))
 spotify.df$track_album_release_date <- substr(spotify.df$track_album_release_date, 0, 4) #dátum redukálása évre
 
 
-#Hangnem (mode) változó átkódolása: major =dúr, minor =moll
+#Mode (Hangnem) variable has benn recode /: major =dúr, minor =moll
 spotify <- spotify.df %>% mutate(mode = recode(mode, 
                                  "1" = "major",
                                  "0" = "minor"))
@@ -56,20 +56,20 @@ spotify <- spotify.df %>% mutate(mode = recode(mode,
 str(spotify)
 summary(spotify)
 
-#NA értékek: összes 10, charachter változókban, melyekkel nem szeretnék dolgozni egyébként sem (trackname,artist)
+#NA values: I found only 10, mall of them in those charachter variables, that I don't want to use (trackname,artist)
 colSums(is.na(spotify))
 
-#Évek: 1957-2020 
+#Checking the years: 1957-2020 
 spotify <- spotify  %>% 
     rename(Year = track_album_release_date)
 
-#Genre fajták és számuk
+#Count genres
 table(spotify$playlist_genre) #6 genre van: edm, latin, pop, r&b, rap, rock. Nagyjából hasonló számban.
 
-#Popularitás értékek alakulása
-summary(spotify.df$track_popularity) #medián: 45 ez fontos lesz még később
+#The popularity variable is being checked:
+summary(spotify.df$track_popularity) #median: 45 this will be important later
 
-#Látható, hogy a nagyon kiugróan sokan adtak 0 értékelést
+#There is a whole lot outlier (popularity = 0)
 ggplot(spotify) +
     aes(x = track_popularity) +
     geom_histogram(bins = 30L) + 
@@ -77,16 +77,16 @@ ggplot(spotify) +
 
 spotify %>% filter(track_popularity < 1) 
 
-#Ebből sajnos nem tiszta, hogy a 0 érték az abból adódik-e,hogy az adott dalt nem hallgatták. Hiszen nem tudjuk, hogy a popularity érték egy átlag-e?
+#From this I cannot be certain what 0 means. Does it means someone did not listen to this song? Or one/more people rated it? Still I have to deal with it .
 
 describe(spotify$track_popularity)
 
 IQR(spotify$track_popularity)
 Tmin = 24-(1.5*38) 
 Tmax = 62+(1.5*38)
-spotify$track_popularity[which(spotify$track_popularity < Tmin | spotify$track_popularity > Tmax)] #IQR alapján is 0 az outlier
+spotify$track_popularity[which(spotify$track_popularity < Tmin | spotify$track_popularity > Tmax)] #IQR shows clearly that the outlier is 0
 
-#Én végül úgy döntöttem, hogy ezt az outliert én szeretném moderálni. Mivel ez a 0 érték nem köthető a megjelenés évéhez sem (ahogy reméltem), ezért capping módszert választottam megoldásként:
+#I decied to moderate this outlier. Frist i tried to use capping:
 
 
 qn = quantile(spotify$track_popularity, c(0.05, 0.95), na.rm = FALSE)
@@ -98,7 +98,7 @@ ggplot(df) +
     geom_histogram(bins = 30L) + 
     theme_minimal()
 
-#Ez is megtöri az eloszlást picit.Más megoldást nem tudtam kitalálni, úgyhogy random módon kitöröltem 2500 sort, amikben a popularity = 0.
+#This didn't seem to good. I choose to randomly delete rows, where the popularity = 0. 
 library(data.table)
 DT <- data.table(spotify)
 spotify <- DT[-sample(which(spotify$track_popularity==0), 2500)]
@@ -108,43 +108,45 @@ ggplot(spotify) +
     geom_histogram(bins = 30L) + 
     theme_minimal()  
 
-#Outlier ellenőrzés:
-describe(spotify$track_popularity) #1Q: 31, 3Q:63
+#Outlier final checks:
+describe(spotify$track_popularity) #1Q:31, 3Q:63
 
 IQR(spotify$track_popularity) #32
+
+#Calculation:
 Tmin = 31-(1.5*32) 
 Tmax = 63+(1.5*32)
-spotify$track_popularity[which(spotify$track_popularity < Tmin | spotify$track_popularity > Tmax)] #még mindig a 0, de az eloszlás egész tűrhető, így hagyom
+spotify$track_popularity[which(spotify$track_popularity < Tmin | spotify$track_popularity > Tmax)] #it is much better, I proceed with this.
+
+#I realise that my sample is quite big as it is. Maybe they woundn't have had any big impact. But I wanted to be safe and I think I found an acceptable way to handle them.
 ```
 
-#Popularitás eloszlások ábrázolása
+#Popularity distributions
 ```{r}
-#install.packages("wesanderson")
-library(wesanderson)
 
-#Popularitás alakulása az évek során. A popularitás itt azt jelenti, hogy mennyire volt népszerű.
+#Popularity based on the years.
 spotify %>% 
     sample_n(1000) %>%
     ggplot() + 
     aes(x=Year, y=track_popularity, color=mode) + 
     geom_point() +
     theme_minimal() +
-    labs( title = 'Popularitás alakulása az évek során', subtitle = "(1957-2020)", y= "Popularitás", color = 'Hangnem') + 
+    labs( title = 'Popularity of song based on the year of appereance', subtitle = "(1957-2020)", y= "Popularity", color = 'Mode') + 
     scale_x_discrete(name = NULL, breaks = scales::pretty_breaks(n= 7))
 
-#Popularitás genre alapján, az évek során
+#Popularity based on genres
 spotify %>% 
     sample_n(1000) %>%
     ggplot() + 
     aes(x=Year, y=track_popularity, color= playlist_genre) + 
     geom_point() + 
     theme_minimal() +
-    labs( title = 'Popularitás alakulása műfajok szerint', subtitle = "(1957-2020)",y= "Popularitás", color = 'Műfaj') +
+    labs( title = 'Popularity of song based on genre', subtitle = "(1957-2020)",y= "Popularity", color = 'Genre') +
     scale_x_discrete(name = NULL,breaks = scales::pretty_breaks(n= 7)) 
 ```
 
 
-Választott bemeneti változók:
+#Chosen final dataset
 ```{r}
 # Dataset for LM
 data <- subset(spotify, select=c(3,7,8, 10,12:17))
@@ -152,15 +154,15 @@ data <- subset(spotify, select=c(3,7,8, 10,12:17))
 ```
 
 
-#Előfeltételek 1: kollinearitás/multikoll. kizárása
+#Assumption 1: Collinearity, multicollienarity 
 ```{r}
 cordata <- cor(data)
 cordata <- round(cordata,2)
 rcorr<-rcorr(as.matrix(data))
 
-pvalues <- round(rcorr$P, 2) #minden észlelt korreláció szingifikáns, ám többségük gyenge.
+pvalues <- round(rcorr$P, 2) #everything correlates, but very lightly.
 
-#Az alábbi változók közötti közepes erősségű kapcsolat van, de mivel ez sem problémás szint (0.8-0.9 fölötti), ezért bent hagytam.
+#These had midle correlations, but they are still beyond the crucial (0.8-0.9), therefore I left them in.
 # energy - acousticness: -0.54
 # energy - loudness: 0.68
 
@@ -176,69 +178,68 @@ corrplot(cordata, method = "color",
          addCoef.col = "black", 
          tl.col = "darkblue", tl.srt = 45,
          sig.level = 0.01,  
-         diag = FALSE) #ábrák mentve a mappába is
+         diag = FALSE) #saved to folder
 
 ```
 
-#Előfeltételek2: Szóráshomogenitás
+#Assumption 2: Variance homogenity
 ```{r}
 #install.packages("onewaytests")
 library(car)
 library(onewaytests)
 
-#Levene's test, ami nem követeli meg a normális eloszlást
+#Bartlett's test
 bartlett <- homog.test(track_popularity ~ mode, data = spotify, method = "Bartlett")
-bartlett$p.value #nem sérül a szóráshomogenitás
+bartlett$p.value #homogenity achieved
 
-#Elvégeztem a robosztus tesztet is, ami alapján szintén nem sérül
-homog.test(track_popularity ~ mode, data = spotify, method = "Levene") # p=0.61
+#I did just in case Levene's test,which does not require normal distribution
+homog.test(track_popularity ~ mode, data = spotify, method = "Levene") # p=0.61, save to go forward
 
 ```
 
-#Előfeltételek3: Lineritás prediktorok és kimeneti változó között
+#Assumption 3: Linearity between predictor and predicted 
 ```{r}
-#Külön végeztem el a változókra, mert nagyon kiolvashatatlan volt egyben a sok ábra
+#I did them separately, because they were to small together to read
 plot(lm(track_popularity ~ danceability, data = data)) 
 plot(lm(track_popularity ~ energy, data = data)) 
-plot(lm(track_popularity ~ loudness, data = data)) #nem teljesül
-plot(lm(track_popularity ~ speechiness, data = data)) #nem teljesül
+plot(lm(track_popularity ~ loudness, data = data)) #isn't linear
+plot(lm(track_popularity ~ speechiness, data = data)) #isn't linear
 plot(lm(track_popularity ~ acousticness, data = data)) 
 plot(lm(track_popularity ~ instrumentalness, data = data))
-plot(lm(track_popularity ~ liveness, data = data)) #nem teljesül
+plot(lm(track_popularity ~ liveness, data = data)) #isn't linear
 plot(lm(track_popularity ~ valence, data = data)) 
-plot(lm(track_popularity ~ tempo, data = data)) #nem teljesül
+plot(lm(track_popularity ~ tempo, data = data)) #isn't linear
 
 
-#A residual vs fitt ábrák mentve mappába /plot, 1 ábrák. A végső számolásba nem kerültek bele az alábbi változók: loudness, speechiness, liveness, tempo
+#The residual vs fitt pictures are saved to folder. I excluded these variable from the final analysis: loudness, speechiness, liveness, tempo
 
 ```
 
-#Reziduális hibák ne korreláljanak / Durbin-Watson test
+#Assumption 4: Residual errors shouldn't correlate/ Durbin-Watson test
 ```{r}
 model <- lm(track_popularity ~ danceability+energy+acousticness+instrumentalness+valence, data=data)
 dw<-durbinWatsonTest(model) 
-#Látom, hogy ez nem teljesül, szingifkáns p értéket kapunk. Ugyanakkor ezen a szinten már nem látom át, hogy ezt pontosan hogyan is lehetne megoldani (valamiféle lag korrekcióval). Ha ez most egy éles kutatás lenne, akkor valószínűleg tanácsot kérnék. Most azonban ettől eltekintek, és lefuttatom a végső elemzést.
+#I see that they are correlating (significant p value). But I am not sure how to escape/fix this. I read about a 'lag correction' but I am confused. I still decide to run the final analysis however I know that in reality I shouldn't. 
 ```
 
-#Többszörös lineáris regresszió futtatása
+#Multiple linear regression analysis
 ```{r}
-#A model tehát:
+#The model:
 model <- lm(track_popularity ~ danceability+energy+acousticness+instrumentalness+valence, data=data)
 summary(model) # popularity = 46.2 + 8.1*danceability + -8*energy +3.1*acousticness + -14.9*instrumentalness + 1.4*valence
 
 
-#R-squared adjusted: Az érték azt jelzi, hogy a modellünk nem magyarárra igazán nagy részét a kimeneti változónak.
+#R-squared adjusted: 0.032 - it shoes, that our model describes popularity only lightly.
 
 #RSE
-sigma(model)/mean(data$track_popularity) #elég magas az érték, ezek szerint a modell elég pontatlan a jelen minta alapján
+sigma(model)/mean(data$track_popularity) # 0.49 = it is pretty high, which mean that the model is really inaccurate.
 ```
 
 #Discussion
 ```{r}
-#Értelmezések: a popularitást leginkább a táncolhatóság, az energiaszint, az akusztikusság, az instrumentáltság és a valencia határozza meg. Problémás a modellünk, mert nem amgyarázza a variancia nagy részét és elég pontatlan is a használt mintán. Az outlierek és a reziduális hibák korrelációja is állhat e-mögött. Az is fontos, hogy nagyon eltérő skálákon mérték a vizsgált prediktor változókat. Lehet, hogy ezek standardizálása is javítana a pontosságon.
+# It would semm that popularity of a song is predicted by mostly by  danceability, energy, acousticness, instrumentalness and valence. However my model i very problematic, as it doesn't explain too big part of the variance and it is inaccurate. Also the outliers and the correlation of residual errors are some other problematic issues. These all make my model very weak. i think it is important, that a lot of variable have different scaling and maybe next time standardizing them would help.  
 
-#Én úgy gondolom, hogy érdemes lenne egy kisebb mintán megnézni, hogy mi határozza emg leginkább a popularitást. Hiszen ahogy láthattuk, a zenei ízlés változott az évek során. Elképzelhető, hogy ez a változó mögöttesen de meghatározta az én elemzésemet is. Így vagy genre hatását lenne érdemes a továbbiakban kibontani, vagy leszűkíteni egy adott "korszakra" a mintát és azon belül vizsgálódni.
-
+#All in all I think it would be useful to redo the calculations on a smaller sample.As we saw, musical taste (genre) changed very harshly. Therefore I would check the impact of genre on popularity, or I would make a smaller sample with limiting the years and check that sample. I think it would be useful the replace the analysis on a smaller sample. The genre is shifting with the year of outcome. I could do a smaple with a specific genre to see the analysis. 
 
 
 ```
