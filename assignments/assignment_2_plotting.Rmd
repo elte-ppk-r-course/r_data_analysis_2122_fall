@@ -30,8 +30,35 @@ The 2020-09-22 TidyTueday datasets are about climbing expeditions. From the thre
 -   The bars are ordered by the sum of all expeditions (use `fct_reorder()`).
 -   The bar colors use the viridis palette and light theme.
 
-```{r}
+```{r} 
+#Reading data
+expeditions_data <- readr::read_csv('https://github.com/rfordatascience/tidytuesday/blob/master/data/2020/2020-09-22/expeditions.csv?raw=true')
+library(forcats)
+library(dplyr)
 
+#15 most frequent peaks
+freq_exped <- expeditions_data %>%
+    mutate(common_peaks = fct_lump(peak_name, n = 15))
+
+#Common peaks without other
+final_exped <- subset(freq_exped, common_peaks!="Other")
+
+#I used reorder. I couldn't use fct_ordert használni, it said that hte 'Number of expeditions' variable does not exists.
+ordered_exped <- within(final_exped, 
+                   common_peaks <- factor(common_peaks, 
+                                      levels=names(sort(table(common_peaks), 
+                                                        decreasing=FALSE))))
+
+#ggplot 
+library(tidyverse)
+  ggplot(ordered_exped, aes(y = common_peaks, fill = season)) + 
+  geom_bar() + 
+  scale_fill_viridis_d() +
+  theme_set(theme_light()) +
+  labs (y = NULL,
+        x = "Number of expeditions",
+        title = "The 15 most popular peaks stacked by season of expedition") +
+  theme(legend.position="bottom")
 ```
 
 ## Task 2: PhDs awarded
@@ -45,6 +72,29 @@ Notes:
 -   The line size is 1.2, the colors are from the brewer "Dark2" palette. The theme is set to minimal.
 
 ```{r}
+phd_raw <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2019/2019-02-19/phd_by_field.csv')
+library(dplyr)
+library(scales)
+library(RColorBrewer)
+
+# I removed NA
+phd_tidy <- drop_na(phd_raw)
+
+#aggregate data
+all_phd <- phd_raw %>% group_by(broad_field) %>% count(year, wt = n_phds)
+
+#ggplot
+all_phd %>% ggplot() +
+    aes(x = year, color = broad_field, y=n) + 
+    geom_line(size = 1.2, show.legend = TRUE) +
+    scale_x_continuous(name = NULL, 
+                       breaks = scales::pretty_breaks(n= 4)) +
+    scale_y_continuous(name = NULL,
+                       labels = scales::comma_format(decimal.mark = ","))+
+    labs( title = 'Number of awarded Ph.D.-s in the US by year',
+          color = 'Broad field')+
+    theme_minimal() + 
+    scale_color_brewer(palette ="Dark2")
 
 ```
 
@@ -59,5 +109,27 @@ Notes:
 -   The point size is 2, . The theme is set to light.
 
 ```{r}
+bike_raw <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2019/2019-11-05/commute.csv')
+library(dplyr)
+library(scales)
+library(forcats)
 
+#check data
+table(bike_raw$state) #javítani kell a Ca-t Californiára
+bike_raw$state[bike_raw$state=="Ca"]<-"California"
+
+#aggregate data
+tidy_bike <- bike_raw %>% group_by(state) %>% count(mode, state_region, state_abb, wt = n)
+plot_data <- tidy_bike %>% pivot_wider(names_from = mode, values_from = n)
+
+#ggplot
+plot_data %>% ggplot(aes(x=Walk, y=Bike, color = state_region, label=state_abb)) + 
+    geom_point(size = 2) +
+    theme_light() + 
+    scale_y_continuous(name = 'Number of ppl walking to work (log N)', trans = "log10", labels = scales::comma_format(decimal.mark = ",")) + 
+    scale_x_continuous(name = 'Number of ppl biking to work (log N)', trans = "log10", labels = scales::comma_format(decimal.mark = ",")) +
+    labs( title = 'Title number of people walking vs. biking to work in each USA state', color = 'State region') + 
+  geom_text(aes(label=state_abb), color = "black")
+
+#On the original picture not every point has a name, but I couldn't figure out what was the rule. 
 ```

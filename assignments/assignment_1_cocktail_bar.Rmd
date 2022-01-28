@@ -32,7 +32,9 @@ Note: There are several different ways to solve these tasks, feel free to come u
 Read the cocktail dataset from: <https://github.com/nthun/cocktail-balance> You can also find the codebook there.
 
 ```{r}
+cocktail_data <- read.table('https://raw.githubusercontent.com/andr3ahor/r_data_analysis_2122_fall/master/data/cocktail_data.tsv', header = TRUE, sep = "\t")
 
+# I couldn't handle ' and # charachters, therefore I deleted them manually from the original file.
 ```
 
 ## 2. Transform the data table and clean the ingredient variable!
@@ -40,7 +42,29 @@ Read the cocktail dataset from: <https://github.com/nthun/cocktail-balance> You 
 The ingredients are currently in a single cell for each cocktail. It would be better to put them in separate rows. Also, the variable should be cleaned of all quantities (e.g. 1/2 oz, 2 dashes, etc.), and the indicator of alcohol content (e.g. 47.3% abv). You will need to use this cleaned table in later tasks.
 
 ```{r}
+#Tidyr package install és load.
+library(tidyr)
 
+#Separate rows for ingredients, along <br/> 
+cocktail_data <- separate_rows(cocktail_data, ingredients, sep = "<br/>", convert = FALSE)
+
+#and with <br> 
+cocktail_data <- separate_rows(cocktail_data, ingredients, sep = "<br>", convert = FALSE) 
+
+#I checked the column names
+colnames(cocktail_data, do.NULL =FALSE)
+
+#I elimited from ingredients column the 'oz''dash/es''drop/s' and 'bps' 
+cocktail_data <- data.frame(lapply(cocktail_data, function(x) {gsub(".*oz ", "", x)}))
+cocktail_data <- data.frame(lapply(cocktail_data, function(x) {gsub(".*drop ", "", x)}))
+cocktail_data <- data.frame(lapply(cocktail_data, function(x) {gsub(".*drops ", "", x)}))
+cocktail_data <- data.frame(lapply(cocktail_data, function(x) {gsub(".*dash ", "", x)}))
+cocktail_data <- data.frame(lapply(cocktail_data, function(x) {gsub(".*dashes ", "", x)}))
+cocktail_data <- data.frame(lapply(cocktail_data, function(x) {gsub(".*bsp ", "", x)}))
+
+#I deleted () as well
+library(stringr)
+cocktail_data$ingredients <- str_remove(cocktail_data$ingredients, pattern = "\\(.*")
 ```
 
 ## 3. All ingredients in alphabetical order
@@ -48,6 +72,19 @@ The ingredients are currently in a single cell for each cocktail. It would be be
 Before opening the bar, you need to find a reliable supplier that has all the ingredients. You need to send a list of all possible ingredients you will need. They don't need the quantities (i.e. how many of these are needed), just the names of the ingredients.
 
 ```{r}
+library(tidyr)
+#Cleaning data: I had to separate rows in ingredients along 'or' 
+cocktail_data <- separate_rows(cocktail_data, ingredients, sep = "or", convert = FALSE)
+
+#Cleanin data: deleting dashes from the start and of the ends of rows 
+cocktail_data$ingredients <- trimws(cocktail_data$ingredients, which = c("both"))
+
+#Unique, not empty data
+cocktailunique <- unique(cocktail_data$ingredients[cocktail_data$ingredients != ""])
+
+#ABC sorting
+sorted_ingr <- sort(cocktailunique)
+
 
 ```
 
@@ -56,6 +93,8 @@ Before opening the bar, you need to find a reliable supplier that has all the in
 How many different ingredients you will need?
 
 ```{r}
+#Summary of sorted_ingr variable = 60
+summary(sorted_ingr)
 
 ```
 
@@ -64,7 +103,8 @@ How many different ingredients you will need?
 What are the 10 most frequently used ingredients? If there are ties, you can list more than 10.
 
 ```{r}
-
+#The 10 most frequent ingredients. I asked for more as there were a lot of ties.
+top10 <- sort(table(cocktail_data$ingredients), decreasing = TRUE) [1:25]
 ```
 
 ## 6. Which cocktail(s) has/have the most ingredients?
@@ -72,7 +112,8 @@ What are the 10 most frequently used ingredients? If there are ties, you can lis
 Count the number of ingredients and filter all the cocktails that has that many.
 
 ```{r}
-
+#As 1 coctail has multiple rows, I checked which coctail name is the most frequent. I found 6 equally frequent name, these have the most ingredients.
+complex_cocktails <- sort(table(cocktail_data$name), decreasing = TRUE) [1:6]
 ```
 
 ## 7. How many ingredients appear in only one cocktail (rare ingredient)?
@@ -80,19 +121,23 @@ Count the number of ingredients and filter all the cocktails that has that many.
 Count all cocktails with only one ingredient, and
 
 ```{r}
-
+#There are 25 rare ingredient 
+rare_ingr <- sort(table(cocktail_data$ingredients), increasing = TRUE) [1:28]
 ```
 
 ## 8. Which cocktail has an ingredient that is only used in one cocktail?
 
 ```{r}
-
+rare_cocktail <- cocktail_data %>% filter(ingredients == "absinthe"|ingredients =="Absolut Citron vodka" |ingredients =="agar-clarified grapefruit juice" |ingredients =="Amer Picon" |ingredients =="centrifuge-clarified grapefruit juice" |ingredients == "Cherry Herring" |ingredients =="cranberry juice" |ingredients =="crem de violette" |ingredients =="Demerara syrup" |ingredients =="Dolin dry vermouth" |ingredients =="Drambuie" |ingredients =="Fernet Branca" |ingredients =="heavy cream" |ingredients =="Hellfire bitters" |ingredients =="Lairds Applejack Bottled in Bond" |ingredients =="Old Tom gin" |ingredients =="pisco" |ingredients =="quinine simple syrup" |ingredients =="saline" |ingredients =="simple" |ingredients == "sloe gin" |ingredients =="sugard 80-proof rum" |ingredients =="sugared 100-proof rye" |ingredients =="white crÂŹme de cacao" |ingredients =="white mezcal" |ingredients =="ange juice" |ingredients =="apple brandy" |ingredients =="blanco tequila")
 ```
 
 ## 9. What are the cocktails without rare ingredients?
 
 ```{r}
-  
+notrare_cocktail <- cocktail_data %>% filter(ingredients != "absinthe"|ingredients !="Absolut Citron vodka" |ingredients !="agar-clarified grapefruit juice" |ingredients !="Amer Picon" |ingredients !="centrifuge-clarified grapefruit juice" |ingredients != "Cherry Herring" |ingredients !="cranberry juice" |ingredients !="crem de violette" |ingredients !="Demerara syrup" |ingredients !="Dolin dry vermouth" |ingredients !="Drambuie" |ingredients !="Fernet Branca" |ingredients !="heavy cream" |ingredients !="Hellfire bitters" |ingredients !="Lairds Applejack Bottled in Bond" |ingredients !="Old Tom gin" |ingredients !="pisco" |ingredients !="quinine simple syrup" |ingredients !="saline" |ingredients !="simple" |ingredients != "sloe gin" |ingredients !="sugard 80-proof rum" |ingredients !="sugared 100-proof rye" |ingredients !="white crÂŹme de cacao" |ingredients !="white mezcal" |ingredients !="ange juice" |ingredients !="apple brandy" |ingredients !="blanco tequila")
+
+#This is the final coctail name list, without duplications. 
+notrare <- unique(notrare_cocktail$name, incomparables = FALSE)
 ```
 
 ## 10. Create a cheat sheet for the bartender!
@@ -105,6 +150,13 @@ tribble(~name, ~Lime, ~`White rum`, ~`Cane sugar`, ~`Coca-cola`, ~Mint, ~Soda,
         "Cuba Libre", "X", "X", "", "X","","",
         "Mojito", "X", "X", "", "", "X", "X") %>% 
     relocate(name, sort(names(.)))
+#Coctails= we need 55 rows
+unique(cocktail_data$name)
+
+#Ingredients = we need 61 columns
+unique(cocktail_data$ingredients)
+
+#I was not able to find hot to create this table.
 ```
 
 ```{r}

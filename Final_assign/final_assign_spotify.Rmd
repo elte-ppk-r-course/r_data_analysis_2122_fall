@@ -1,0 +1,246 @@
+---
+title: "Spotify"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+```
+
+#Intro
+Final assignment: Spotify
+
+The 2021-08-31 TidyTueday dataset is about song popularity on Spotify. This is a 2020 dataset, the years mean only the appearance of the song. There is only one dataset, it is called `commute`. Reproduce the plot below!
+
+The data has not been screened on youtube.
+
+See below as required:
+    -Proper textual explanations, and commented code
+    -Exploratory data analysis with useful visualizations
+    -Testing of hypothesis by building statistical model(s)
+    -Verifying that statistical tests are reliable and valid (e.g. residual diagnostics, assumption checks)
+    
+Az EDA után arra leszek kíváncsi, hogy milyen tényezők határozzák meg legjobban a popularitást /korreláció, majd lineáris regresszió. 
+#Végül az elemzések alapján megpróbálok felállítani egy modellt erre.
+    
+#Dataset
+```{r}
+spotify_songs <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-01-21/spotify_songs.csv')
+library(tidyverse)
+library(ggplot2)
+library(ggcorrplot)
+library(kableExtra)
+library(knitr)
+library(psych)
+library(Hmisc)
+library(RColorBrewer)
+
+```
+
+#Tidy
+```{r}
+#I chosose those (mostly numeric) variables, that i would like to check more closely. 
+spotify.df <- subset(spotify_songs, select=c(2,3,4,7,8, 10,12:23))
+spotify.df$track_album_release_date <- substr(spotify.df$track_album_release_date, 0, 4) #dátum redukálása évre
+
+
+#Mode (Hangnem) variable has benn recode /: major =dúr, minor =moll
+spotify <- spotify.df %>% mutate(mode = recode(mode, 
+                                 "1" = "major",
+                                 "0" = "minor"))
+
+```
+#EDA
+```{r}
+str(spotify)
+summary(spotify)
+
+#NA values: I found only 10, mall of them in those charachter variables, that I don't want to use (trackname,artist)
+colSums(is.na(spotify))
+
+#Checking the years: 1957-2020 
+spotify <- spotify  %>% 
+    rename(Year = track_album_release_date)
+
+#Count genres
+table(spotify$playlist_genre) #6 genre van: edm, latin, pop, r&b, rap, rock. Nagyjából hasonló számban.
+
+#The popularity variable is being checked:
+summary(spotify.df$track_popularity) #median: 45 this will be important later
+
+#There is a whole lot outlier (popularity = 0)
+ggplot(spotify) +
+    aes(x = track_popularity) +
+    geom_histogram(bins = 30L) + 
+    theme_minimal()
+
+spotify %>% filter(track_popularity < 1) 
+
+#From this I cannot be certain what 0 means. Does it means someone did not listen to this song? Or one/more people rated it? Still I have to deal with it .
+
+describe(spotify$track_popularity)
+
+IQR(spotify$track_popularity)
+Tmin = 24-(1.5*38) 
+Tmax = 62+(1.5*38)
+spotify$track_popularity[which(spotify$track_popularity < Tmin | spotify$track_popularity > Tmax)] #IQR shows clearly that the outlier is 0
+
+#I decied to moderate this outlier. Frist i tried to use capping:
+
+
+qn = quantile(spotify$track_popularity, c(0.05, 0.95), na.rm = FALSE)
+df = within(spotify, { track_popularity = ifelse(track_popularity < qn[1], qn[1], track_popularity)
+track_popularity = ifelse(track_popularity > qn[2], qn[2], track_popularity)})
+
+ggplot(df) +
+    aes(x = track_popularity) +
+    geom_histogram(bins = 30L) + 
+    theme_minimal()
+
+#This didn't seem to good. I choose to randomly delete rows, where the popularity = 0. 
+library(data.table)
+DT <- data.table(spotify)
+spotify <- DT[-sample(which(spotify$track_popularity==0), 2500)]
+
+ggplot(spotify) +
+    aes(x = track_popularity) +
+    geom_histogram(bins = 30L) + 
+    theme_minimal()  
+
+#Outlier final checks:
+describe(spotify$track_popularity) #1Q:31, 3Q:63
+
+IQR(spotify$track_popularity) #32
+
+#Calculation:
+Tmin = 31-(1.5*32) 
+Tmax = 63+(1.5*32)
+spotify$track_popularity[which(spotify$track_popularity < Tmin | spotify$track_popularity > Tmax)] #it is much better, I proceed with this.
+
+#I realise that my sample is quite big as it is. Maybe they woundn't have had any big impact. But I wanted to be safe and I think I found an acceptable way to handle them.
+```
+
+#Popularity distributions
+```{r}
+
+#Popularity based on the years.
+spotify %>% 
+    sample_n(1000) %>%
+    ggplot() + 
+    aes(x=Year, y=track_popularity, color=mode) + 
+    geom_point() +
+    theme_minimal() +
+    labs( title = 'Popularity of song based on the year of appereance', subtitle = "(1957-2020)", y= "Popularity", color = 'Mode') + 
+    scale_x_discrete(name = NULL, breaks = scales::pretty_breaks(n= 7))
+
+#Popularity based on genres
+spotify %>% 
+    sample_n(1000) %>%
+    ggplot() + 
+    aes(x=Year, y=track_popularity, color= playlist_genre) + 
+    geom_point() + 
+    theme_minimal() +
+    labs( title = 'Popularity of song based on genre', subtitle = "(1957-2020)",y= "Popularity", color = 'Genre') +
+    scale_x_discrete(name = NULL,breaks = scales::pretty_breaks(n= 7)) 
+```
+
+
+#Chosen final dataset
+```{r}
+# Dataset for LM
+data <- subset(spotify, select=c(3,7,8, 10,12:17))
+
+```
+
+
+#Assumption 1: Collinearity, multicollienarity 
+```{r}
+cordata <- cor(data)
+cordata <- round(cordata,2)
+rcorr<-rcorr(as.matrix(data))
+
+pvalues <- round(rcorr$P, 2) #everything correlates, but very lightly.
+
+#These had midle correlations, but they are still beyond the crucial (0.8-0.9), therefore I left them in.
+# energy - acousticness: -0.54
+# energy - loudness: 0.68
+
+library(viridis)
+library(corrplot)
+ggcorrplot(cordata, 
+           hc.order = FALSE, 
+           type = "upper",
+           lab = FALSE) + scale_fill_viridis()
+
+corrplot(cordata, method = "color",  
+         type = "lower", order = "original", 
+         addCoef.col = "black", 
+         tl.col = "darkblue", tl.srt = 45,
+         sig.level = 0.01,  
+         diag = FALSE) #saved to folder
+
+```
+
+#Assumption 2: Variance homogenity
+```{r}
+#install.packages("onewaytests")
+library(car)
+library(onewaytests)
+
+#Bartlett's test
+bartlett <- homog.test(track_popularity ~ mode, data = spotify, method = "Bartlett")
+bartlett$p.value #homogenity achieved
+
+#I did just in case Levene's test,which does not require normal distribution
+homog.test(track_popularity ~ mode, data = spotify, method = "Levene") # p=0.61, save to go forward
+
+```
+
+#Assumption 3: Linearity between predictor and predicted 
+```{r}
+#I did them separately, because they were to small together to read
+plot(lm(track_popularity ~ danceability, data = data)) 
+plot(lm(track_popularity ~ energy, data = data)) 
+plot(lm(track_popularity ~ loudness, data = data)) #isn't linear
+plot(lm(track_popularity ~ speechiness, data = data)) #isn't linear
+plot(lm(track_popularity ~ acousticness, data = data)) 
+plot(lm(track_popularity ~ instrumentalness, data = data))
+plot(lm(track_popularity ~ liveness, data = data)) #isn't linear
+plot(lm(track_popularity ~ valence, data = data)) 
+plot(lm(track_popularity ~ tempo, data = data)) #isn't linear
+
+
+#The residual vs fitt pictures are saved to folder. I excluded these variable from the final analysis: loudness, speechiness, liveness, tempo
+
+```
+
+#Assumption 4: Residual errors shouldn't correlate/ Durbin-Watson test
+```{r}
+model <- lm(track_popularity ~ danceability+energy+acousticness+instrumentalness+valence, data=data)
+dw<-durbinWatsonTest(model) 
+#I see that they are correlating (significant p value). But I am not sure how to escape/fix this. I read about a 'lag correction' but I am confused. I still decide to run the final analysis however I know that in reality I shouldn't. 
+```
+
+#Multiple linear regression analysis
+```{r}
+#The model:
+model <- lm(track_popularity ~ danceability+energy+acousticness+instrumentalness+valence, data=data)
+summary(model) # popularity = 46.2 + 8.1*danceability + -8*energy +3.1*acousticness + -14.9*instrumentalness + 1.4*valence
+
+
+#R-squared adjusted: 0.032 - it shoes, that our model describes popularity only lightly.
+
+#RSE
+sigma(model)/mean(data$track_popularity) # 0.49 = it is pretty high, which mean that the model is really inaccurate.
+```
+
+#Discussion
+```{r}
+# It would semm that popularity of a song is predicted by mostly by  danceability, energy, acousticness, instrumentalness and valence. However my model i very problematic, as it doesn't explain too big part of the variance and it is inaccurate. Also the outliers and the correlation of residual errors are some other problematic issues. These all make my model very weak. i think it is important, that a lot of variable have different scaling and maybe next time standardizing them would help.  
+
+#All in all I think it would be useful to redo the calculations on a smaller sample.As we saw, musical taste (genre) changed very harshly. Therefore I would check the impact of genre on popularity, or I would make a smaller sample with limiting the years and check that sample. I think it would be useful the replace the analysis on a smaller sample. The genre is shifting with the year of outcome. I could do a smaple with a specific genre to see the analysis. 
+
+
+```
+

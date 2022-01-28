@@ -59,7 +59,15 @@ In your discussion of the findings, briefly interpret the results of the above a
 Read the dataset used in this assignment. Pay attention to the extension of the datafile.
 
 ```{r}
-
+raw_pain <- read_excel("C:/Users/qzinw/rprog/r_data_analysis_2122_fall/data/assignment_3_dataset.xlsx")
+library(tidyverse)
+library(ggplot2)
+library(ggcorrplot)
+library(kableExtra)
+library(knitr)
+library(psych)
+library(Hmisc)
+library(RColorBrewer)
 ```
 
 ## Data and model diagnostics 
@@ -69,6 +77,70 @@ Read the dataset used in this assignment. Pay attention to the extension of the 
 Run an exploratory data analysis (EDA) to investigate the dataset.
 
 ```{r}
+library(ggridges)
+library(viridis)
+library(hrbrthemes)
+
+#EDA
+summary <- summary(raw_pain)
+str(raw_pain) #2 charachter variable x 10 numeric
+
+sex <- table(raw_pain$sex) #1 woman has to be recoded to female
+
+colSums(is.na(raw_pain)) #No NA-s
+
+#Making final data
+pain.df <- subset(raw_pain, select=c(2:9)) #I excluded the ID and the last 3 variables, that won't be in the models.
+
+
+```
+
+#Visuals
+```{r}
+#Rate of age
+ggplot(pain.df, aes(x=age, color=sex)) +
+    geom_histogram(fill="white", position="dodge")+
+    theme(legend.position="top") + labs(title= "Distribution of age in males and females", y= "Count", x="Age")
+
+#Distribution of STAI
+ggplot(pain.df, aes(x=STAI_trait, color=sex)) +
+    geom_histogram(fill="white", position="dodge")+
+    theme(legend.position="top") + labs(title= "Distribution of trait anxiety in males and females", y= "Count", x="STAI")
+
+#Distribution of pain catastrophizing
+ggplot(pain.df, aes(x=pain_cat, color=sex)) +
+    geom_histogram(fill="white", position="dodge")+
+    theme(legend.position="top") + labs(title= "Distribution of age in males and females", y= "Count", x="Pain catastrophizing") # I detect some outliers
+
+#Distribution of cortisol serum
+ggplot(pain.df, aes(x=cortisol_serum, color=sex)) +
+    geom_histogram(fill="black", position="dodge")+
+    theme(legend.position="top") + labs(title= "Distribution of age in males and females", y= "Count", x="Cortisol serum")
+
+#Distribution of cortisol saliva
+ggplot(pain.df, aes(x=cortisol_saliva, color=sex)) +
+    geom_histogram(fill="white", position="dodge")+
+    theme(legend.position="top") + labs(title= "Distribution of age in males and females", y= "Count", x="Cortisol in saliva")
+
+#Distribution of mindfulness
+ggplot(pain.df, aes(x=mindfulness, color=sex)) +
+    geom_histogram(fill="white", position="dodge")+
+    theme(legend.position="top") + labs(title= "Distribution of age in males and females", y= "Count", x="Range of mindfulness") #I detect outliers
+
+#Distribution of pain
+ggplot(pain.df) +
+    aes(x = pain) +
+    geom_histogram(bins = 30L, col ="blue", fill="black") + 
+    theme_minimal() #I can detect an outlier, at 50.
+
+#Distribution of pain in sex group
+
+ggplot(pain.df, aes(x=pain, color=sex)) +
+    geom_histogram(fill="white", position="dodge")+
+    theme(legend.position="top") + labs(title= "Distribution of pain in males and females", y= "Count", x="Range of pain") #I can see an outlier data.
+
+
+
 
 ```
 
@@ -77,7 +149,39 @@ Run an exploratory data analysis (EDA) to investigate the dataset.
 If you find values in the dataset during the EDA, that are not correct based on the provided descriptions of the variables of the dataset please correct them here.
 
 ```{r}
+#I do here the corrections found with the EDA.
 
+#1_Woman to female
+which(grepl("woman", pain.df$sex)) #35
+pain.df$sex <- replace(pain.df$sex, 35, "female")
+sex <- table(pain.df$sex) 
+
+#2_Checking outliers in pain
+boxplot(pain.df$pain) #There is a 50
+which(grepl(50, pain.df$pain)) #in row 142. I assume this was originally a 5. Therefor i will replace it with 5.
+pain.df$pain <- replace(pain.df$pain, 142, 5)
+
+boxplot(pain.df$pain) #perfect
+
+#3_checking outlier in pain catastrophizing
+summary(pain.df$pain_cat)
+
+IQR(pain.df$pain_cat) #5.25
+Tmin = 27-(1.5*5.25) 
+Tmax = 32.25+(1.5*5.25)
+pain.df$pain_cat[which(pain.df$pain_cat < Tmin | pain.df$pain_cat > Tmax)] # values of: 41 14 41 15 42 42. These are outlier but within the scale range, i leave them.
+
+#4_checking outlier in mindfulness
+summary(pain.df$mindfulness)
+
+IQR(pain.df$mindfulness)
+Tmin = 2.595-(1.5*1.235) 
+Tmax = 3.830+(1.5*1.235)
+pain.df$mindfulness[which(pain.df$mindfulness < Tmin | pain.df$mindfulness > Tmax)] # values of: 6.22. This is exceeding the range (1-6), I replace it with median  (3.115).
+
+which(grepl(6.22, pain.df$mindfulness)) #in row 49
+pain.df$mindfulness <- replace(pain.df$mindfulness, 49, 3.115)
+boxplot(pain.df$mindfulness) #perfect 
 ```
 
 ### Model diagnostics
@@ -86,7 +190,11 @@ If you find values in the dataset during the EDA, that are not correct based on 
 In order to test the more complex model for outliers and to test the assumptions first build the model.
 
 ```{r}
+#Change sex to numeric, 1=male, female=2
+pain.df$sex<-replace(pain.df$sex, pain.df$sex =="male" , 1)
+pain.df$sex<-replace(pain.df$sex, pain.df$sex =="female" , 2)
 
+model <- lm(pain ~ sex+age+STAI_trait+pain_cat+cortisol_serum+cortisol_saliva+mindfulness, data=pain.df)
 ```
 
 #### Checking for influential outliers
@@ -95,6 +203,10 @@ Check for outlier values in the model.
 
 ```{r}
 
+#Outlier in residuals:
+boxplot(model$residuals)
+plot(lm(pain ~ sex+age+STAI_trait+pain_cat+cortisol_serum+cortisol_saliva+mindfulness, data=pain.df))
+
 ```
 
 #### Checking assumptions
@@ -102,6 +214,14 @@ Check for outlier values in the model.
 Check the normality assumption.
 
 ```{r}
+#I made a dataset without the sex to check this
+model_data <- subset(pain.df, select=c(1,3:8))
+
+#Bartlett's
+bartlett <- cortest.bartlett(model_data) #significant p
+
+#Shapiro_wilk
+result.sh <- mshapiro.test(t(model_data)) #p-value = 0.01746
 
 ```
 
@@ -109,11 +229,28 @@ Check the linearity assumption.
 
 ```{r}
 
+plot(lm(pain ~ sex+age+STAI_trait+pain_cat+cortisol_serum+cortisol_saliva+mindfulness, data=pain.df))
+
+#Residuals vs. fitted per variable
+plot(lm(pain ~ age, data = pain.df)) 
+plot(lm(pain ~ STAI_trait, data = pain.df)) 
+plot(lm(pain ~ pain_cat, data = pain.df)) 
+plot(lm(pain ~ cortisol_serum, data = pain.df)) 
+plot(lm(pain ~ cortisol_saliva, data = pain.df)) 
+plot(lm(pain ~ mindfulness, data = pain.df)) #Linearity is mostly ok for the variables.
+
+
+
 ```
 
 Check the homoscedasticty assumption (homogeneity of variance).
 
 ```{r}
+library(car)
+library(onewaytests)
+
+#Because normality was compromised, I used Levene's test
+homog.test(pain ~ sex, data = pain.df, method = "Levene") #homogenous variance
 
 ```
 
@@ -126,7 +263,8 @@ https://statisticalhorizons.com/multicollinearity
 http://blog.minitab.com/blog/understanding-statistics/handling-multicollinearity-in-regression-analysis
 
 ```{r}
-
+library(car)
+car::vif(model) #cortisol serum (6.093359) and cortisol saliva (6.670708) have unacceptably high values.
 ```
 
 ### Making decision based on model diagnostics
@@ -135,11 +273,21 @@ If based on the assumption tests you decide to drop a predictor variable you sho
 
 ```{r}
 
+#I plan to drop the cortisol serum and saliva from my model.
+tidy_df <- subset(pain.df, select=c(1:5,8))
+
+#I will have to change my model to a non-linear one due to bad normality -> Multivariate Logistic Regression
+mlr_model <- glm(pain ~ sex+age+STAI_trait+pain_cat+mindfulness, data=pain.df)
+
+
 ```
 
 #### Checking outliers of the updated model
 
 ```{r}
+
+plot(glm(pain ~ sex+age+STAI_trait+pain_cat+mindfulness, data=pain.df))
+
 
 ```
 
@@ -148,25 +296,39 @@ If based on the assumption tests you decide to drop a predictor variable you sho
 Normality assumption
 
 ```{r}
+#I made a dataset without the cortisol variables
+model_data2 <- subset(tidy_df, select=c(1,3:6))
 
+#Bartlett's
+bartlett2 <- cortest.bartlett(model_data2) #significant p
+
+#Shapiro_wilk
+result.sh <- mshapiro.test(t(model_data2)) #It improved! p-value = 0.02134.
 ```
 
 Linearity assumption
 
 ```{r}
+plot(glm(pain ~ sex+age+STAI_trait+pain_cat+mindfulness, data=pain.df))
 
+#Residuals vs. fitted per variable
+plot(lm(pain ~ age, data = tidy_df)) 
+plot(lm(pain ~ STAI_trait, data = tidy_df)) 
+plot(lm(pain ~ pain_cat, data = tidy_df)) 
+plot(lm(pain ~ mindfulness, data = tidy_df)) #Linearity is mostly not that bad.
 ```
 
 Homoscedasticty assumption (homogeneity of variance)
 
 ```{r}
-
+#Because normality was compromised, I used Levene's test
+homog.test(pain ~ sex, data = tidy_df, method = "Levene") #variances are homogeneous
 ```
 
 Multicollinearity assumption
 
 ```{r}
-
+car::vif(mlr_model) #Values are perfectly low. I will use this mlr_model in the comparison.
 ```
 
 ## Model comparison
@@ -174,7 +336,7 @@ Multicollinearity assumption
 Create the simple model and get the results of the model that needs to be reported based on the What to report section.
 
 ```{r}
-
+simple_model <- lm(pain ~ sex+age, data=pain.df)
 ```
 
 Create the more complex model based on the results of the model diagnostics. Also, get the results that needs to be reported based on the What to report section.
@@ -186,6 +348,14 @@ Create the more complex model based on the results of the model diagnostics. Als
 Compare the two models.
 
 ```{r}
+
+#Summary
+
+summary(simple_model) # only age seems to have a significant impact on pain. AIC: 580.09
+summary(mlr_model)#only pain catastrophisation and STAI seems to predict significantly pain. AIC: 550.16, very similar to the simple model.
+
+#Discussion
+#For me the most valuable information is from the mlr_model. Even if the normality ws impacted, the model suggests that the way people treat pain (pain catastrophizing) has a great impact on the pain level.It is surprising that mindfulness however does not have a significant impact.
 
 ```
 
