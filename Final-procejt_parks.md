@@ -1,3 +1,5 @@
+###md file was uploaded after deadline. Rmd file was the original file added in time: https://github.com/doraczirfusz/r_data_analysis_2122_fall/blob/master/Final%20procejt_parks.Rmd ###
+
 install.packages(“patchwork”) library(patchwork) library(dplyr)
 library(ggplot2) library(Hmisc) library(corrplot) library(car)
 \#\#\#\#\#In this report i am going to examine how investment (var.
