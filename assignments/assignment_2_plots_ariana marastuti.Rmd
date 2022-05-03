@@ -67,12 +67,12 @@ The 2020-09-22 TidyTueday datasets are about climbing expeditions. From the thre
 -   The bar colors use the viridis palette and light theme.
 
 ```{r}
-expeditions <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-09-22/expeditions.csv')
-str(expeditions)
-top_peak <- fct_lump_n(f = expeditions$peak_name, n = 15)
-expedition2 <- subset(expeditions, peak_name == top_peak)
+expeditions_raw <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-09-22/expeditions.csv')
+str(expeditions_raw)
+top_peak <- fct_lump_n(f = expeditions_raw$peak_name, n = 15)
+expedition_clean <- subset(expeditions_raw, peak_name == top_peak)
 
-ggplot(data = expedition2, 
+ggplot(data = expedition_clean, 
        aes(y = fct_rev(fct_infreq(peak_name)), fill = season)) + 
   geom_bar() + 
   theme_light() +
