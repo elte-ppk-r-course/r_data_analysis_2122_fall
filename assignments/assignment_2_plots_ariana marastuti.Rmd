@@ -2,7 +2,9 @@
 title: "assignment 2_ariana marastuti"
 author: "Tamas Nagy"
 date: '2022-05-03'
-output: html_document
+output:
+  html_document: default
+  pdf_document: default
 ---
 
 ```{r setup, include=FALSE}
