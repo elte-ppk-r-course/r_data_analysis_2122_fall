@@ -8,6 +8,7 @@ editor_options:
 
 You will have to create 3 plots based on the datasets and instructions detailed below. You will find the plots themeselves in the `assignments/assignment_2_plots`. Your task is to write the code that will reproduce the plots as closely as possible.
 
+
 # Skills needed to solve this assignment
 
 -   Using R and RStudio, reading data
@@ -25,14 +26,18 @@ library(tidytuesdayR)
 ## Task 1: Climbing expeditions
 
 The 2020-09-22 TidyTueday datasets are about climbing expeditions. From the three datasets, use the "expeditions". Reproduce the plot below! Notice a few things:
-
 -   Use `forcats::fct_lump()` to get the 15 most frequent peaks, and drop the "Other" category.
 -   The bars are ordered by the sum of all expeditions (use `fct_reorder()`).
 -   The bar colors use the viridis palette and light theme.
 
+
 ```{r}
 expeditions <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-09-22/expeditions.csv')
 str(expeditions)
+library(tidyverse)
+
+
+
 top_peak <- fct_lump_n(f = expeditions$peak_name, n = 15)
 expedition2 <- subset(expeditions, peak_name == top_peak)
   

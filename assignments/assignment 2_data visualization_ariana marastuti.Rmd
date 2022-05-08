@@ -1,0 +1,64 @@
+---
+title: 'Assignment 2: Data visualization'
+author: "Tamas Nagy"
+student : ariana marastuti
+date: '2022-05-03'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+summary(cars)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+library(tidyverse)
+library(tidytuesdayR)
+library(viridis)
+library(scales)
+library(RColorBrewer)
+```
+## Task 1: Climbing expeditions
+
+The 2020-09-22 TidyTueday datasets are about climbing expeditions. From the three datasets, use the "expeditions". Reproduce the plot below! Notice a few things:
+  
+  -   Use `forcats::fct_lump()` to get the 15 most frequent peaks, and drop the "Other" category.
+-   The bars are ordered by the sum of all expeditions (use `fct_reorder()`).
+-   The bar colors use the viridis palette and light theme.
+
+```{r}
+expeditions_raw <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-09-22/expeditions.csv')
+str(expeditions_raw)
+top_peak <- fct_lump_n(f = expeditions_raw$peak_name, n = 15)
+expedition_clean <- subset(expeditions_raw, peak_name == top_peak)
+
+ggplot(data = expedition_clean, 
+       aes(y = fct_rev(fct_infreq(peak_name)), fill = season)) + 
+  geom_bar() + 
+  theme_light() +
+  ggtitle("The most 15 popular peaks stacked by season of expedition") +
+  labs(x = "Number of expeditions", y = "") +
+  scale_fill_viridis(discrete = T) +
+  theme(legend.position = "bottom")
+```

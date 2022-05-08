@@ -9,6 +9,8 @@ editor_options:
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
+library(psych)
+
 ```
 
 # Introduction
@@ -223,4 +225,3 @@ Run the logistic regression.
 ```{r}
 
 ```
-
