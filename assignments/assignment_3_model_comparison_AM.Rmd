@@ -98,4 +98,43 @@ view(pain)
 summary(pain)
 ```
 ##Based on the double check, there is no more category of women in the variable sex and all the data is clear. 
+### Model diagnostics
+#### Build the more complex model
 
+In order to test the more complex model for outliers and to test the assumptions first build the model.
+#checking the regression model with preductors variables are sex, age, STAI- trait, pain category,mindifullness, cortisol serum, and cortisol saliva  
+
+
+```{r}
+complex_reggmod <- lm(pain ~ age + sex + STAI_trait + pain_cat + mindfulness + cortisol_serum + cortisol_saliva, data = pain)
+
+nrow(model.frame(complex_reggmod))
+
+summary(complex_reggmod)
+```
+#### Checking for influential outliers
+
+Check for outlier values in the model.
+```{r}
+plot(complex_reggmod)
+
+## Based on the plot residual vs leverage, there is a potential outlier from data number 142.Therefore for further detection, we will check by cook's distance command.
+```
+
+
+```{r}
+cooksd <- cooks.distance(complex_reggmod)
+## Plot the cook's distance using the traditional criterion
+```
+
+
+
+```{r}
+cooksd <- cooks.distance(complex_reggmod)
+plot(cooksd, pch="*", cex=2, main="Influential Obs by Cooks distance")
+abline(h = 3*mean(cooksd, na.rm=T), col="red")
+text(x=1:length(cooksd)+1, y=cooksd, labels=ifelse(cooksd>4*mean(cooksd, na.rm=T),names(cooksd),""), col="red")
+pain_final <- pain[-142, ]
+complex_mod_clean <- lm(pain ~ age + sex + STAI_trait + pain_cat + mindfulness + cortisol_serum + cortisol_saliva, data = pain_final)
+summary(complex_mod_clean)
+```
