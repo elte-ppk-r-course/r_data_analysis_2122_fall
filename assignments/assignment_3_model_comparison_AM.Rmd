@@ -289,4 +289,7 @@ pain = 0.34 - 0.02 * age + 0.34 * sex - 0.01 * STAIT_trait *+ 0.10 * pain_cat - 
 comparing two model with anova
 error models were not all fitted to the same size of dataset
 
-
+)
+```{r}
+summary(complex_mode_final
+```
