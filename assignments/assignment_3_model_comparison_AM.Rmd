@@ -292,4 +292,7 @@ error models were not all fitted to the same size of dataset
 )
 ```{r}
 summary(complex_mode_final
+        anova(simple_mod_final, complex_mod_final)
+model1 <- glance(simple_mod_final)
+model2 <- glance(complex_mod_final)
 ```
