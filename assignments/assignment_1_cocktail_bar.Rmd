@@ -15,8 +15,12 @@ editor_options:
 -   String manipulation (e.g. stringr)
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = FALSE, tidy=TRUE)
+library(knitr)
+library(readr)
+library(stringr)
 library(tidyverse)
+#sdfsdfsdfgfgsfgfgf
 ```
 
 # Background
@@ -31,7 +35,10 @@ Note: There are several different ways to solve these tasks, feel free to come u
 
 Read the cocktail dataset from: <https://github.com/nthun/cocktail-balance> You can also find the codebook there.
 
-```{r}
+```{r data1}
+data1 <- read_tsv('https://raw.githubusercontent.com/nthun/cocktail-balance/master/cocktail_data.tsv')
+data1
+
 
 ```
 
@@ -39,67 +46,153 @@ Read the cocktail dataset from: <https://github.com/nthun/cocktail-balance> You 
 
 The ingredients are currently in a single cell for each cocktail. It would be better to put them in separate rows. Also, the variable should be cleaned of all quantities (e.g. 1/2 oz, 2 dashes, etc.), and the indicator of alcohol content (e.g. 47.3% abv). You will need to use this cleaned table in later tasks.
 
-```{r}
+```{r data_transformation, include=FALSE}
+data2 = data1 %>% 
+  mutate(ingredients=strsplit(ingredients, "<br/>")) %>% 
+  unnest(ingredients)
 
+data3 = data2 %>% 
+  mutate(ingredients=strsplit(ingredients, "<b4/>")) %>% 
+  unnest(ingredients)
+
+data4 <- data3 %>%
+  mutate_at("ingredients", str_replace, "oz ", "")
+
+data5 = data4 %>% 
+  mutate_at("ingredients", str_replace, "drops ", "",)
+
+data5$ingredients <- gsub("\\d+", "", data5$ingredients)
+data5$ingredients
+
+data5$ingredients <- gsub("[()]", "", data5$ingredients)
+
+data5$ingredients
+
+data5$ingredients <- gsub("[[:punct:]]", "", data5$ingredients)
+data5$ingredients
+
+data6 = data5 %>% 
+  mutate_at("ingredients", str_replace, "dashes ", "",)
+
+data7 = data6 %>% 
+  mutate_at("ingredients", str_replace, "dash", "",)
+
+data8 = data7 %>% 
+  mutate_at("ingredients", str_replace, "bsp ", "",)
+
+data9 = data8 %>% 
+  mutate_at("ingredients", str_replace, " abv", "",)
+  
+data9$ingredients <- trimws(data9$ingredients)
+data9$ingredients
 ```
 
 ## 3. All ingredients in alphabetical order
 
 Before opening the bar, you need to find a reliable supplier that has all the ingredients. You need to send a list of all possible ingredients you will need. They don't need the quantities (i.e. how many of these are needed), just the names of the ingredients.
 
-```{r}
+```{r alphabetical_order}
+data9 = data9 %>% 	
+  mutate(ingredients = factor(ingredients))
 
+list_of_ingredients = levels(data9$ingredients)
+list_of_ingredients
+list_of_ingredients_df=data.frame(list_of_ingredients)
 ```
 
 ## 4. Number of unique ingredients
 
 How many different ingredients you will need?
 
-```{r}
-
+```{r ingredients_list}
+nrow(list_of_ingredients_df)
 ```
+
+I will need 'r nrow(list_of_ingredients_df)' different kinds of ingredients. 
 
 ## 5. What are the top 10 ingredients?
 
 What are the 10 most frequently used ingredients? If there are ties, you can list more than 10.
 
-```{r}
+```{r top 10 ingredients}
+table(data9$ingredients) 
+ingredient_frequency = data.frame(dplyr::count(data9, ingredients))
 
+ingredient_frequency=arrange(ingredient_frequency, desc(n))
+top_ten_most_frequent_ingredients = ingredient_frequency[1:10,]
 ```
+
+
+
+
+The most frequent ingredients are 'r print(top_ten_most_frequent_ingredients)'. 
 
 ## 6. Which cocktail(s) has/have the most ingredients?
 
 Count the number of ingredients and filter all the cocktails that has that many.
 
-```{r}
+```{r cocktail_most_ingredients}
+most_ingredients = data9 %>% 
+  count(name, sort = TRUE) #I counted how many times a cocktail's name appears since it tells us how many different ingredient it has.
+most_ingredients
 
+cocktails_with_the_most_ingredients=most_ingredients %>% 
+  filter(n == 6)
+
+cocktails_with_the_most_ingredients
 ```
+
+The cocktails with the most ingredients are: 'r print(cocktails_with_the_most_ingredients)'.
 
 ## 7. How many ingredients appear in only one cocktail (rare ingredient)?
 
 Count all cocktails with only one ingredient, and
 
-```{r}
+```{r in_only_one_cocktail}
+most_ingredients %>% 
+  filter(n == 1) #-> there are no such cocktails
 
+rare_ingredients = ingredient_frequency %>% 
+  arrange(n) %>% 
+  filter(n == 1)
+
+nrow(rare_ingredients)
 ```
+
+'r nrow(rare_ingredients)' ingredients appear in only one cocktail.
 
 ## 8. Which cocktail has an ingredient that is only used in one cocktail?
 
-```{r}
+```{r rare_ingredients}
 
+rare_ingredient_names = rare_ingredients$ingredients
+rare_ingredient_names
+
+target <- c(rare_ingredient_names)
+
+cocktails_with_rare_ingredients = filter(data9, ingredients %in% target)
+cocktails_with_rare_ingredients$name
 ```
 
 ## 9. What are the cocktails without rare ingredients?
 
-```{r}
-  
+```{r without_rare}
+not_rare_ingredients = ingredient_frequency %>% 
+  arrange(n) %>% 
+  filter(n != 1)
+
+not_rare_ingredient_names = not_rare_ingredients$ingredients
+
+target2 <- c(not_rare_ingredient_names)
+cocktails_with_not_rare_ingredients = filter(data9, ingredients %in% target2)
+cocktails_with_not_rare_ingredients$name
 ```
 
 ## 10. Create a cheat sheet for the bartender!
 
 Create a matrix that shows all cocktail names as rows and all ingredients as columns. When a cocktail requires an ingredient, there should be an "X" in the cell, otherwise, the cell should remain empty. Example:
 
-```{r echo=FALSE}
+```{r include=FALSE}
 tribble(~name, ~Lime, ~`White rum`, ~`Cane sugar`, ~`Coca-cola`, ~Mint, ~Soda,
         "Caipirissima", "X", "X", "X", "", "", "",
         "Cuba Libre", "X", "X", "", "X","","",
@@ -107,10 +200,87 @@ tribble(~name, ~Lime, ~`White rum`, ~`Cane sugar`, ~`Coca-cola`, ~Mint, ~Soda,
     relocate(name, sort(names(.)))
 ```
 
-```{r}
+```{r matrix, include=FALSE}
+cocktail_names2=data9$name
+levels(data9$ingredients)
+
+Lemon_juice=ifelse(data9$ingredients == "lemon juice", "X", "")
+Egg_white=ifelse(data9$ingredients == "egg white", "X", "")
+absinthe = ifelse(data9$ingredients == "absinthe", "X", "")
+Absolut_Citron_vodka = ifelse(data9$ingredients == "Absolut Citron vodka", "X", "")
+agarclarified_grapefruit_juice = ifelse(data9$ingredients == "agarclarified grapefruit juice", "X", "")
+Angostura_bitters = ifelse(data9$ingredients == "Angostura bitters", "X", "")
+Benedictine = ifelse(data9$ingredients == "Benedictine", "X", "")
+bourbon = ifelse(data9$ingredients == "bourbon", "X", "")
+centrifugeclarified_grapefruit_juice = ifelse(data9$ingredients == "centrifugeclarified grapefruit juice", "X", "")
+Cherry_Herring = ifelse(data9$ingredients == "Cherry Herring", "X", "")
+clarified_lime_juice_or_champagne_acid = ifelse(data9$ingredients == "clarified lime juice or champagne acid", "X", "")
+Cointreau = ifelse(data9$ingredients == "Cointreau", "X", "")
+crem_de_violette = ifelse(data9$ingredients == "crem de violette", "X", "")
+Demerara_syrup = ifelse(data9$ingredients == "Demerara syrup", "X", "")
+Drambuie = ifelse(data9$ingredients == "Drambuie", "X", "")
+dry_vermouth = ifelse(data9$ingredients == "dry vermouth", "X", "")
+Fernet_Branca = ifelse(data9$ingredients == "Fernet Branca", "X", "")
+grapefruit_juice = ifelse(data9$ingredients == "grapefruit juice", "X", "")
+Grenadine = ifelse(data9$ingredients == "Grenadine", "X", "")
+Hellfire_bitters = ifelse(data9$ingredients == "Hellfire bitters", "X", "")
+Lairds_Applejack_Bottled_in_Bond = ifelse(data9$ingredients == "Lairds Applejack Bottled in Bond", "X", "")
+lemon_juicebr_Angostura_bitters = ifelse(data9$ingredients == "lemon juicebr  Angostura bitters", "X", "")
+lime_juice = ifelse(data9$ingredients == "lime juice", "X", "")
+Luxardo_Marschino = ifelse(data9$ingredients == "Luxardo Marschino", "X", "")
+orange_bitters = ifelse(data9$ingredients == "orange bitters", "X", "")
+Peychauds_bitters = ifelse(data9$ingredients == "Peychauds bitters", "X", "")
+Plymouth_gin = ifelse(data9$ingredients == "Plymouth gin", "X", "")
+raspberry_syrup = ifelse(data9$ingredients == "raspberry syrup", "X", "")
+saline_solution = ifelse(data9$ingredients == "saline solution", "X", "")
+simple = ifelse(data9$ingredients == "simple", "X", "")
+sloe_gin = ifelse(data9$ingredients == "sloe gin", "X", "")
+sugared_proof_rye = ifelse(data9$ingredients == "sugared proof rye", "X", "")
+sweet_vermouthbr_oz_orange_juice = ifelse(data9$ingredients == "sweet vermouthbr  oz orange juice", "X", "")
+white_cr_u008fme_de_cacao = ifelse(data9$ingredients == "white cr\u008fme de cacao", "X", "")
+white_rum = ifelse(data9$ingredients == "swhite_rum", "X", "")
+Amer_Picon = ifelse(data9$ingredients == "Amer Picon", "X", "")
+apple_brandy = ifelse(data9$ingredients == "apple brandy", "X", "")
+blanco_tequila = ifelse(data9$ingredients == "blanco tequila", "X", "")
+Campari = ifelse(data9$ingredients == "Campari", "X", "")
+champagne_acid = ifelse(data9$ingredients == "champagne acid", "X", "")
+clarified_lime_juice = ifelse(data9$ingredients == "clarified lime juice", "X", "")
+Cognac = ifelse(data9$ingredients == "Cognac", "X", "")
+cranberry_juice = ifelse(data9$ingredients == "cranberry juice", "X", "")
+Curacao = ifelse(data9$ingredients == "Curacao", "X", "")
+Dolin_dry_vermouth = ifelse(data9$ingredients == "Dolin dry vermouth", "X", "")
+drop_saline = ifelse(data9$ingredients == "drop saline", "X", "")
+gin = ifelse(data9$ingredients == "gin", "X", "")
+Green_Chartreuse = ifelse(data9$ingredients == "Green Chartreuse", "X", "")
+heavy_cream = ifelse(data9$ingredients == "heavy cream", "X", "")
+honey_syrup = ifelse(data9$ingredients == "honey syrup", "X", "")
+Lillet_Blanc = ifelse(data9$ingredients == "Lillet Blanc", "X", "")
+Luxardo_Maraschino = ifelse(data9$ingredients == "Luxardo Maraschino", "X", "")
+Old_Tom_gin = ifelse(data9$ingredients == "Old Tom gin", "X", "")
+orange_juice = ifelse(data9$ingredients == "orange juice", "X", "")
+pisco = ifelse(data9$ingredients == "pisco", "X", "")
+quinine_simple_syrup = ifelse(data9$ingredients == "quinine simple syrup", "X", "")
+rye = ifelse(data9$ingredients == "rye", "X", "")
+Scotch = ifelse(data9$ingredients == "Scotch", "X", "")
+simple_syrup = ifelse(data9$ingredients == "simple syrup", "X", "")
+sugard_proof_rum = ifelse(data9$ingredients == "sugard proof rum", "X", "")
+sweet_vermouth = ifelse(data9$ingredients == "sweet vermouth", "X", "")
+water = ifelse(data9$ingredients == "water", "X", "")
+white_mezcal = ifelse(data9$ingredients == "white mezcal", "X", "")
+Yellow_Chartreuse = ifelse(data9$ingredients == "Yellow Chartreuse", "X", "")
+
+matrix=data.frame(cocktail_names2,Lemon_juice, Egg_white, absinthe, Absolut_Citron_vodka, agarclarified_grapefruit_juice, Angostura_bitters, Benedictine, bourbon, Cherry_Herring, clarified_lime_juice_or_champagne_acid, Cointreau, crem_de_violette, Demerara_syrup, Drambuie, dry_vermouth, Fernet_Branca, grapefruit_juice, Grenadine, Hellfire_bitters, Lairds_Applejack_Bottled_in_Bond, lemon_juicebr_Angostura_bitters, lime_juice, Luxardo_Marschino, Peychauds_bitters, Plymouth_gin, raspberry_syrup, saline_solution, simple, sloe_gin, sugared_proof_rye, sweet_vermouthbr_oz_orange_juice, white_cr_u008fme_de_cacao, white_rum, Amer_Picon, apple_brandy, blanco_tequila, Campari, champagne_acid, clarified_lime_juice, Cognac, cranberry_juice, Curacao, Dolin_dry_vermouth, gin, Green_Chartreuse, heavy_cream, honey_syrup, Lillet_Blanc, Luxardo_Maraschino, Old_Tom_gin, orange_juice, pisco, quinine_simple_syrup, rye, Scotch, simple_syrup, sugard_proof_rum, sweet_vermouth, water, white_mezcal, Yellow_Chartreuse)
+
+
+
+view(matrix)
 
 ```
 
+
+```{r matrix_view}
+view(matrix)
+```
 
 Congrats, the bar is now officially open!
 
