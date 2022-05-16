@@ -1,15 +1,10 @@
 ---
 title: "Assignment 7: Lightning simulation"
-author: "Tamas Nagy"
+author: Dora Czirfusz
 output: html_document
 editor_options: 
   chunk_output_type: console
 ---
-
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-library(tidyverse)
-```
 
 
 # Task
@@ -23,15 +18,57 @@ library(tidyverse)
 - (extra point) Try to do this using no loops! (loops are ok, but you can earn less points)
 - (extra point) Create an animation using gganimate, where the lightning hits from above to below.
 
-# Dataset
+ #dataset
+ df1<- data.frame(0,0)  
+ names(df1)<- c("Y","X")  
+ y<-0  
+ for (g in 1:300){  
+ df1[g,2] <- g  
+ df1[g,1] <- y  
+ y <- y + rnorm(1,0,1)  
+ }  
+ 
+ #plot
+ par(bg = 'black')
+ plot(df1$X, df1$Y, ylim=c(-100,100), xlim=c(0,300), cex=0)    
+ lines(df1$X,df1$Y, col=c("#99CCFF"), lwd=2)  
+ df2<- data.frame(0,0)  
+ names(df2)<- c("Y","X")  
+ y<-0  
+ for (g in 1:300){  
+  df2[g,2] <- g  
+  df2[g,1] <- y  
+  y <- y + rnorm(1,0,1)  
+ }  
+ lines(df2$X,df2$Y, col=c("#99CCFF"), lwd=2)  
+ df3<- data.frame(250,df1[250,1])  
+ names(df3)<- c("Y","X")  
+ y<-df1[250,1]  
+ for (g in 250:300){  
+  df3[g-249,2] <- g  
+  df3[g-249,1] <- y  
+  y <- y + rnorm(1,0,1)  
+ }  
+ lines(df3$X,df3$Y, col=c("#99CCFF"), lwd=2)  
+ df4<- data.frame(250,df1[250,1])  
+ names(df4)<- c("Y","X")  
+ y<-df1[250,1]  
+ for (g in 50:250){  
+  df4[g-249,2] <- g  
+  df4[g-249,1] <- y  
+  y <- y + rnorm(1,0,1)  
+ }  
+ lines(df4$X,df4$Y, col=c("#99CCFF"), lwd=2)  
+ 
+ #rotate
+library(gridGraphics)
 
-There is no dataset for this project. You have to simulate from scratch!
+grab_grob <- function(){
+  grid.echo()
+  grid.grab()
+}
 
-# Example lightning
-
-![Lightning](assignment_7_example/example_lightning.png)
-
-```{r}
-
-```
-
+g <- grab_grob()
+grid.newpage()
+pushViewport(viewport(width=0.7,angle=270))
+grid.draw(g)

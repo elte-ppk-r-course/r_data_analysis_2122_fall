@@ -1,0 +1,133 @@
+### md file were uploaded after deadline: https://github.com/doraczirfusz/r_data_analysis_2122_fall/blob/master/Final-procejt_parks.md ###
+---
+title: "Final procect: Park Access"
+author: "Dora Czirfusz"
+output: html_document
+---
+install.packages("patchwork")
+library(patchwork)
+library(dplyr)
+library(ggplot2)
+library(Hmisc)
+library(corrplot)
+library(car)
+#####In this report i am going to examine how investment (var. spend_per_resident_points) affect different amenities  (var. amenities_points) in parks. I also examine whether parks are rather dog-friendly (var. dogpark_points) or child-friendly (var. playground_points)
+
+#STEPS:
+  #1. Create hypothesis
+  #2. Explore data
+  #3. Assumption testing
+  #4. Hypothesis testing & Visualization
+  #5. Conlusion
+  
+####STEP1: Hypothesis
+#####################
+H1: Higher amount of investment leads to more amenities.
+H2: Parks are rather child-friendly than dog-friendly.
+
+####STEP2: EDA
+###########
+install.packages("tidytuesdayR")
+tuesdata <- tidytuesdayR::tt_load('2021-06-22')
+tuesdata <- tidytuesdayR::tt_load(2021, week = 26)
+
+parks <- tuesdata$parks
+View(parks)
+head(parks)
+
+#EDA
+summary(parks)
+
+#selected variables are going to be used: year, city, spend_per_resident_points, basketball_points, dogpark_points, playground_points, rec_sr_points, restroom_points, splashground_points, amenities_points
+df<- select(parks, c(year, city, spend_per_resident_points, dogpark_points, playground_points,  amenities_points))
+
+#plot: amenities by year
+df %>%
+ggplot(aes(x = year, y = amenities_points)) +
+      geom_point(color = "darkblue") +
+      labs(title = "Amenities in parks by years",
+           y = "Amenities (points 0-100)",
+           x = "Date") + theme_bw(base_size = 11)
+# -------›as the graph of amenities shows, amenities are measured since 2015, therefor years 2012-2014 can be deleted
+df<- df %>% as.data.frame(filter_at(vars(1), any_vars(. > 2014)))
+
+
+#plot: dog-parks by year
+df %>%
+ggplot(aes(x = year, y = dogpark_points)) +
+      geom_point(color = "darkblue") +
+      labs(title = "Dog-parks by year",
+           y = "Dog parks (points 0-100)",
+           x = "Date") + theme_bw(base_size = 11)
+#plot: playgrounds by year         
+df %>%
+ggplot(aes(x = year, y = playground_points)) +
+      geom_point(color = "darkblue") +
+      labs(title = "Playgrounds by year",
+           y = "Plyagrounds (points 0-100)",
+           x = "Date") + theme_bw(base_size = 11)
+           
+
+##-------› by looking at the graphs it seems like there is no significant difference between dog-parks and playgrounds, testing H2 will give the final answear.
+
+####STEP3: Assumption-check
+#######################
+
+#H1 will be tested by linear regression, I start with checking normalities
+lm<- lm(df$spend_per_resident_points ~ df$amenities_points)
+hist(lm$resid, main="Histogram of Residuals",
+ ylab="Residuals")
+ 
+shapiro.test(lm$resid)
+
+##-------› residuals ara not normally distributed. I stop checking other assumptions, linear regression cannot be performed. Later I use simple correlation instead. After checking normality, Spearmant-correlation will be used
+shapiro.test(df$dogpark_points)
+shapiro.test(df$spend_per_resident_points)
+
+#H2 will be tested by t-test, I start with checking normalities
+shapiro.test(df$playground_points)
+shapiro.test(df$spend_per_resident_points)
+
+##-------› data is not normal, still I go with t-test, because it is robust to non-normality 
+
+####STEP4: testing hypothesis
+#H1 by correlation
+
+cor<- rcorr(cbind(df$spend_per_resident_points, df$amenities_points), type="spearman")
+cor
+
+#plotting H1
+
+plot(df$spend_per_resident_points ~ df$amenities_points, pch = 16, cex = 1.3, col = "darkblue", main = "Amenities plotted against investment")
+abline(lm(df$spend_per_resident_points ~ df$amenities_points))
+         
+##-------› correlation gives a significant result, there is moderate positive linear relationship between the two variables.  Higher investment comes with higher points of amenities. p<0,05, r=0,62
+
+
+#H2: by paired t-test
+t.test(df$dogpark_points, df$playground_points, paired = TRUE, alternative = "less")
+
+
+#plotting H2          
+
+p1 <-ggplot(df, aes(x = year, y = dogpark_points)) +
+      geom_bar(stat = "summary", fun="mean", fill = "darkblue") +
+      labs(title = "Dog-parks by year",
+           y = "Dog parks (points 0-100)",
+           x = "Year")
+
+p2 <-ggplot(df, aes(x = year, y = playground_points)) +
+      geom_bar(stat = "summary", fun="mean", fill = "darkblue") +
+      labs(title = "Playgrounds by year",
+           y = "Playgrounds (points 0-100)",
+           x = "Year")
+           
+p1+p2
+
+##-------› t-test confirmed what the earlier graph shew: there isn't any significal difference between the amount of dog-parks and the amount of playgrounds. P>0,05
+
+#STEP5: results
+#H1: Higher amount of investment leads to more amenities. ----› linear regression could not be performed, although correlation gives significant result: Higher investment comes with higher points of amenities. However it does not mean that investment affect the amount of amenities, it is only a orrelation, not causation. We cannot reject nor support this hypothesis.
+
+#H2: Parks are rather child-friendly than dog-friendly.----› according to t-test, there is no difference between the amount of dog-friendliness and child-friedliness, we need to reject H2.
+
