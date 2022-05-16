@@ -8,6 +8,20 @@ editor_options:
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+library(lm.beta)
+library(car) 	
+library(cAIC4) 	
+library(r2glmm) 		
+library(lme4) 	
+library(lmerTest) 
+library(MuMIn) 
+library(lmtest) 	
+library(sandwich) 
+library(boot) 
+library(sjPlot)
+library(ggfortify) 	
+library(broom) 
+library(psych)
 library(tidyverse)
 ```
 
@@ -57,15 +71,50 @@ Compare the model coefficients and the confidence intervals observed in this ass
 
 Read the datasets used in this assignment. Pay attention to the extensions of the datafiles.
 
-```{r}
+```{r data}
+a_data = read.csv("https://raw.githubusercontent.com/kyragiran/databases/master/assignment_4_dataset_A.xlsx%20-%20Sheet1.csv") #I have uploaded both datasets to my github so they can be easily opened
+a_data
 
+b_data = read.csv("https://raw.githubusercontent.com/kyragiran/databases/master/assignment_4_dataset_B.xlsx%20-%20assignment_4_dataset_B.csv")
+b_data
 ```
 
 ## Exploratory data analysis
 
 Run an exploratory data analysis (EDA) to investigate the dataset.
 
-```{r}
+```{r EDA}
+a_data = a_data %>% 
+  mutate(hospital = factor(hospital),
+         sex = factor(sex))
+levels(a_data$hospital)
+levels(a_data$sex)
+table(a_data$sex)
+
+describe(a_data)
+
+a_data %>% 
+  summary()
+
+a_data %>% 
+  ggplot()+
+  aes(x = household_income) +
+  geom_histogram()
+
+a_data %>% 
+  ggplot()+
+  aes(x = age) +
+  geom_histogram()
+
+a_data %>% 
+  ggplot()+
+  aes(x = IQ) +
+  geom_histogram()
+
+a_data %>% 
+  ggplot()+
+  aes(x = weight) +
+  geom_histogram()
 
 ```
 
@@ -73,7 +122,52 @@ Run an exploratory data analysis (EDA) to investigate the dataset.
 
 If you find values in the dataset during the EDA, that are not correct based on the provided descriptions of the variables of the dataset please correct them here.
 
-```{r}
+```{r correcting}
+a_data2 = a_data %>%
+  mutate(sex = droplevels(replace(sex, sex == "Male", "male")),
+         household_income = replace(household_income, household_income == -2672, 2672))
+
+levels(a_data2$sex)
+summary(a_data2$household_income)
 
 ```
+
+
+```{r model}
+mod_a = lmer(pain ~ age + sex + STAI_trait + pain_cat + mindfulness + cortisol_serum + (1|hospital), data =a_data2)
+summary(mod_a)
+
+summ(mod_a, confint=TRUE)
+
+r2beta(mod_a)
+r2beta(mod_a, method = "nsj", data = a_data2)
+
+r.squaredGLMM(mod_a)
+
+
+tab_model(mod_a)
+
+
+b_prediction = predict(mod_a, allow.new.levels = TRUE, newdata = b_data)
+
+b_prediction
+
+RSS = sum((b_data$pain - b_prediction)^2)	
+RSS
+
+mod_a
+
+mod_mean = lm(pain ~ 1, data = b_data)	
+mod_mean
+
+TSS = sum((b_data$pain - predict(mod_mean))^2)	
+TSS
+
+R2 = 1-(RSS/TSS)	
+R2
+
+
+``` 
+
+For model_a on the a database the fixed effects explain 31,7% of the variance, and the variance explained by the entire model is 43,6%. This is more than in the previous assigment, where the model only explained 35,5% of the variance.
 
