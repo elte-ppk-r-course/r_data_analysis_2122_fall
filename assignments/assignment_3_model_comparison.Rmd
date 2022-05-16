@@ -20,7 +20,9 @@ Your first study in this area is related to assessing the influence of trait and
 
 Use the data file called ‘assignment_3_dataset’, from the 'data/' folder.
 
-You have collected data from 160 adults who were scheduled to undergo surgical extraction of the third mandibular molar (wisdom tooth surgery). Patients filled out a form in the waiting room before their surgery. The form contained questions about their sex, age, and weight, and psychological questionnaires assessing anxiety, pain catastrophizing, and mindfulness (see descriptions below). You also got blood samples and saliva samples from participants in the waiting room 5 minutes before their operations to determine the serum (a component of the blood) and salivary cortisol levels of participants. Participants were contacted 5 hours after the surgery to see how much pain they were experiencing. The __level of pain__ at that moment was recorded using a numerical rating scale using a __scale of 0 to 10__, where 0 means “no pain” and 10 means “worst pain I can imagine”. 
+You have collected data from 160 adults who were scheduled to undergo surgical extraction of the third mandibular molar (wisdom tooth surgery). Patients filled out a form in the waiting room before their surgery. The form contained questions about their sex, age, and weight, and psychological questionnaires assessing anxiety, pain catastrophizing, and mindfulness (see descriptions below). You also got blood samples and saliva samples from participants in the waiting room 5 minutes before their operations to determine the serum (a component of the blood) and salivary cortisol levels of participants. 
+
+Participants were contacted 5 hours after the surgery to see how much pain they were experiencing. The __level of pain__ at that moment was recorded using a numerical rating scale using a __scale of 0 to 10__, where 0 means “no pain” and 10 means “worst pain I can imagine”. 
 
 __The State Trait Anxiety Inventory:__ T measures trait anxiety on a scale of 20 to 80, higher scores mean higher anxiety. Anxiety has been found in many studies to positively correlate with the level of pain experienced. This is __variable STAI_trait__ in the dataset.
 
@@ -38,7 +40,8 @@ To answer this research question you will __need to compare two models__ (with a
 
 # What to report
 
-As usual, before you can interpret your model, you will need to run data and model diagnostics. First, check the variables included in the more complex model (age, sex, STAI, pain catastrophizing, mindfulness, and cortisol measures as predictors, and pain as an outcome) for __coding errors__, and the model itself for __influential outliers__ (for example using Cook’s distance). Furthermore, check the final model to see if the __assumptions of linear regression hold true__, that is, __normality__ (of the residuals), __linearity__ (of the relationship), __homogeneity of variance__ (also called homoscedasticity) and that there is no excess __multicollinearity__ (“uncorrelated predictors” in Navarro’s words). If you find anything amiss during these checks, make the appropriate decision or correction and report your findings and actions in your report. 
+As usual, before you can interpret your model, you will need to run data and model diagnostics. First, check the variables included in the more complex model (age, sex, STAI, pain catastrophizing, mindfulness, and cortisol measures as predictors, and pain as an outcome) for __coding errors__, and the model itself for __influential outliers__ (for example using Cook’s distance). 
+Furthermore, check the final model to see if the __assumptions of linear regression hold true__, that is, __normality__ (of the residuals), __linearity__ (of the relationship), __homogeneity of variance__ (also called homoscedasticity) and that there is no excess __multicollinearity__ (“uncorrelated predictors” in Navarro’s words). If you find anything amiss during these checks, make the appropriate decision or correction and report your findings and actions in your report. 
 
 __Note:__ If you do any changes, such as exclude cases, or exclude predictors from the model, you will have to re-run the above checks for your final data and model.
 
@@ -58,9 +61,33 @@ In your discussion of the findings, briefly interpret the results of the above a
 
 Read the dataset used in this assignment. Pay attention to the extension of the datafile.
 
-```{r}
+```{r packages, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, tidy=TRUE)
+
+library(lm.beta) 
+library(car)	
+library(lmtest)
+library(sandwich)	
+library(boot)
+library(ggfortify)
+library(jtools)
+library(stargazer)
+library(broom) 
+library(psych)
+library(Hmisc)
+library(corrplot)
+library(ggplot2)
+library(tidyverse)
 
 ```
+
+```{r datafile, include=FALSE}
+data1 = read.csv("https://raw.githubusercontent.com/kyragiran/databases/master/assignment_3_dataset.xlsx%20-%20home_sample_1%20(1).csv") #I have uploaded the datafile to my github so it can be loaded easily
+data1
+
+```
+
+
 
 ## Data and model diagnostics 
 ### Data diagnostics
@@ -68,7 +95,31 @@ Read the dataset used in this assignment. Pay attention to the extension of the 
 
 Run an exploratory data analysis (EDA) to investigate the dataset.
 
-```{r}
+```{r EDA, echo=TRUE}
+data1 = data1 %>% 
+  mutate(ID = factor(ID),
+         sex = factor(sex))
+
+describe(data1)
+data1 %>% 
+  summary()
+
+data1 %>% 
+  ggplot()+
+  aes(x = age) +
+  geom_histogram()
+
+data1 %>% 
+  ggplot()+
+  aes(x = IQ) +
+  geom_histogram()
+
+data1 %>% 
+  ggplot()+
+  aes(x = weight) +
+  geom_histogram()
+
+levels(data1$sex)
 
 ```
 
@@ -76,16 +127,41 @@ Run an exploratory data analysis (EDA) to investigate the dataset.
 
 If you find values in the dataset during the EDA, that are not correct based on the provided descriptions of the variables of the dataset please correct them here.
 
-```{r}
+```{r coding_errors, include=FALSE}
+data2 = data1 %>% 
+  filter(sex != "woman") %>%
+  mutate(sex = droplevels(sex))
+
+data3 = data2 %>% 
+  mutate(pain = replace(pain,  pain=="50", 5))
+
+
+levels(data3$sex)
+summary(data3$pain)
 
 ```
+
+```{r EDA2, echo=TRUE}
+data3_cor = data3[,c(2,4,5,6,7,8,9,10,11)]
+
+res=cor(data3_cor)
+
+corrplot(res, type = "upper", order = "hclust", 
+         tl.col = "black", tl.srt = 45)
+
+summary(data3)
+
+```
+
+
 
 ### Model diagnostics
 #### Build the more complex model
 
 In order to test the more complex model for outliers and to test the assumptions first build the model.
 
-```{r}
+```{r mod2}
+mod_2 = lm(pain ~ age + sex + STAI_trait +pain_cat + mindfulness + cortisol_serum + cortisol_saliva, data = data3)
 
 ```
 
@@ -93,27 +169,105 @@ In order to test the more complex model for outliers and to test the assumptions
 
 Check for outlier values in the model.
 
-```{r}
+```{r influential_outliers}
+data3 %>%
+  ggplot() +
+  aes(x = age, y = pain) +
+  geom_point() +
+  geom_smooth(method = "lm")
 
+data3 %>%
+  ggplot() +
+  aes(x = STAI_trait, y = pain) +
+  geom_point() +
+  geom_smooth(method = "lm")
+
+data3 %>%
+  ggplot() +
+  aes(x = mindfulness, y = pain) +
+  geom_point() +
+  geom_smooth(method = "lm")
+
+data3 %>%
+  ggplot() +
+  aes(x = cortisol_serum, y = pain) +
+  geom_point() +
+  geom_smooth(method = "lm")
+
+data3 %>%
+  ggplot() +
+  aes(x = cortisol_saliva, y = pain) +
+  geom_point() +
+  geom_smooth(method = "lm")
+
+
+mod_2 %>%
+  plot(which = 4)
+
+mod_2 %>%
+  plot(which = 5)
 ```
 
 #### Checking assumptions
 
 Check the normality assumption.
 
-```{r}
+```{r normality}
+mod_2 %>%
+  plot(which = 2)
+
+residuals_mod2 = enframe(residuals(mod_2))
+
+residuals_mod2 %>%
+  ggplot() +
+  aes(x = value) +
+  geom_histogram()
+
+describe(residuals(mod_2))
+
+data3_nooutliers = data3 %>%
+  slice(-c(141,149,105))
+
+mod_3 = lm(pain ~ age + sex + STAI_trait +pain_cat + mindfulness + cortisol_serum + cortisol_saliva, data =
+             data3_nooutliers)
+
+describe(residuals(mod_3))
+
+residuals_mod3 = enframe(residuals(mod_3))
+
+residuals_mod3 %>%
+  ggplot() +
+  aes(x = value) +
+  geom_histogram()
+
+mod_3 %>%
+  plot(which = 5)
+
+summary(mod_2)
+summary(mod_3)
 
 ```
 
+Since cases 141, 149 ans 105 were outstanding outliers I removed them.
+
 Check the linearity assumption.
 
-```{r}
-
+```{r linearity}
+mod_3 %>%
+  residualPlots()
 ```
 
 Check the homoscedasticty assumption (homogeneity of variance).
 
-```{r}
+```{r homoscedasticity}
+mod_3 %>%
+  plot(which = 3)
+
+mod_3 %>%
+  ncvTest()
+
+mod_3 %>%
+  bptest()
 
 ```
 
@@ -125,7 +279,9 @@ Some info about VIF:
 https://statisticalhorizons.com/multicollinearity
 http://blog.minitab.com/blog/understanding-statistics/handling-multicollinearity-in-regression-analysis
 
-```{r}
+```{r multicollinearity}
+mod_3 %>%
+  vif()
 
 ```
 
@@ -133,13 +289,25 @@ http://blog.minitab.com/blog/understanding-statistics/handling-multicollinearity
 
 If based on the assumption tests you decide to drop a predictor variable you should do that here. Create your updated model.
 
-```{r}
-
+Since the assumption of multicollinearity was violated I took out cortisol_saliva. The VIF number for them in the original model was: Cortisol_serum 5,99 and cortisol_saliva 6.63. These are well above 3, which means that they measure roughly the same phenomena. I took out cortisol_saliva beacuse the intro above said that cortisol serum is more reliable. 
+```{r mod4}
+mod_4 = lm(pain ~ age + sex + STAI_trait + pain_cat + mindfulness + cortisol_serum, data =
+             data3_nooutliers)
 ```
 
 #### Checking outliers of the updated model
 
-```{r}
+```{r updated_outliers}
+mod_4 %>% plot(which = 5)
+mod_4 %>% plot(which = 4)
+
+data4_nooutliers = data3_nooutliers %>%  # I ruled out some outliers because their Cook's distance was a bit concerning
+  slice(-c(80,108,132))
+
+mod_5 = lm(pain ~ age + sex + STAI_trait + pain_cat + mindfulness + cortisol_serum, data =
+             data4_nooutliers)
+
+mod_5 %>% plot(which = 4)
 
 ```
 
@@ -147,45 +315,75 @@ If based on the assumption tests you decide to drop a predictor variable you sho
 
 Normality assumption
 
-```{r}
+```{r updated_normality}
+mod_5 %>% plot(which = 2)
+
+residuals_mod_5 = enframe(residuals(mod_5))
+residuals_mod_5 %>% ggplot() + aes(x = value) + geom_histogram()
+
+describe(residuals(mod_5))
 
 ```
 
 Linearity assumption
 
-```{r}
+```{r updated_linearity}
+
+mod_5 %>% residualPlots()
 
 ```
 
 Homoscedasticty assumption (homogeneity of variance)
 
-```{r}
+```{r updated_homoscedasticity}
+mod_5 %>% ncvTest()
 
 ```
 
 Multicollinearity assumption
 
-```{r}
-
+```{r updated_multicollinearity}
+mod_5 %>% vif()
 ```
 
 ## Model comparison
 
 Create the simple model and get the results of the model that needs to be reported based on the What to report section.
 
-```{r}
+```{r mod_1_results}
+mod_1 = lm(pain ~ age + sex, data =
+             data4_nooutliers)
 
+summary(mod_1)
+summ(mod_1, confint = TRUE, digits = 3)
+confint(mod_1)
 ```
 
 Create the more complex model based on the results of the model diagnostics. Also, get the results that needs to be reported based on the What to report section.
 
-```{r}
+```{r mod_5_results}
+mod_5 = lm(pain ~ age + sex + STAI_trait + pain_cat + mindfulness + cortisol_serum, data =
+             data4_nooutliers)
+
+summary(mod_5)
+summ(mod_5, confint = TRUE, digits = 3)
+confint(mod_5)
 
 ```
 
 Compare the two models.
 
-```{r}
+```{r model_comaprison}
+AIC(mod_1)	
+AIC(mod_5)
+
+anova(mod_1, mod_5)	
 
 ```
+
+regression equation for mod_5: Pain = 2,3 + (-0,04) ∗age +0,37 ∗sexmale+0,02∗STAI_trait+0,06∗pain_cat+(-0,204)∗mindfulness +0,49∗cortisol_serum
+
+
+Discussion: Both models are significantly better then their null modela (for model_1 p=0,001, for model_5 p=0,00). In the first model, only age is a significant predictor. In the more complex model age, pain category and cortisol serum are the significant predictors.
+model_1 with only the age and sex as predictors explains 7,1% of the variance, whereas model_5 explains 35,3% of the variance which means that model_5 is a considerably better model to predict pain. The Aikake information criterion for model_1 is 543,85 and for mod_5 it is 492,52 which also shows that the more complex model is better. The anova backs up that the more complex model is significantly better at capturing the data because p<0,05.
 
