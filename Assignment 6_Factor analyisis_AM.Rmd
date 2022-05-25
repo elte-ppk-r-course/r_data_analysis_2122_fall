@@ -206,56 +206,161 @@ Create a scree plot to help the decision on how many factors to include.
 scree(items_ar)
 fa.parallel(items_ar)
 ```
- Parallel analysis, as shown in the above scree plot indicated that the number of factors is 4 and the number of component is 2. Considering this result, the factor analysis will be conducted with 4 factors. 
+ Parallel analysis, as shown in the above scree plot indicated that the number of factors is 3 and the number of component is 2. Considering this result, the factor analysis will be conducted with 4 factors. 
  
 ## Run the factor analysis
 
 Run the factor analysis with the chosen number of factors.
 
 ```{r}
+facan_result <- fa(items_ar, nfactors = 3, fm = "minres", rotate = "oblimin")
 
+print(facan_result$loading, cutoff =0.3)
 ```
+Factor analysis was done with factoring method of minimum residual since the disribution assumption (normality mutivariate is not met). Oblimin rotate factor was used as they allow inter-factor correlation with the number of factor specief 4.
+since, i use factor loading cut point is 0.45 due to the number of participant is 154 (based on some resources if the partipants araoun 150, the the cut point of factor loading is .45). After revieweing the factor loading, there are 8 items below the cut point, those are: ar1, ar3, ar8, ar16, ar18,ar21, ar22, ar28. there are also 9 items cross loading (ar10, ar17, ar19, ar20,ar21,ar24, ar27), so those items will excluded from the scales. 
+finally there are 13 items will be tested further (ar2, ar4,ar5,ar6,ar9,ar11,ar12,ar13,ar14,ar15, ar23, ar25, ar26)
 
-Sort the communality scores in decreasing order.
+
+###Sort the communality scores in decreasing order.
+```{r}
+install.packages("GPArotation")
+library(GPArotation)
+```
 
 ```{r}
+items_new <- items_ar %>%
+  select(-c(ar1, ar3, ar8, ar10, ar16, ar17, ar18, ar19, ar20, ar21, ar22, ar24, ar27, ar28))
+facan_newresult <-fa(items_new, nfactors =4)
 
 ```
+    
+```{r}
+sort(facan_newresult$communality, decreasing = T)
+```
+sort(facan_newresult$communality, decreasing = T)
+     ar13       ar5      ar15       ar2      ar12       ar9       ar6       ar4      ar26      ar23      ar11       ar7      ar14      ar25 
+0.9250130 0.9051441 0.6991632 0.6422802 0.6022560 0.4914105 0.4713765 0.4632562 0.4015383 0.3934382 0.3716142 0.3683937 0.3242609 0.3011510 
 
-Calculate the mean communality scores.
+
+The results show that there are no item have communality score below 0.5, so all new items in the simple sacle will be included. 
 
 ```{r}
-
+items_fix <- items_ar%>%
+  select(-c(ar2,ar4, ar6, ar9, ar11, ar12, ar13, ar14,ar15,ar23, ar25, ar26))
 ```
-
-Show the factor loadings for the chosen factor structure.
+###Calculate the mean communality scores.
 
 ```{r}
-
+mean(facan_newresult$communality)
 ```
+[1] 0.5257354
 
-Visualize the factor structure.
+###Show the factor loadings for the chosen factor structure.
 
 ```{r}
+print(facan_newresult$loadings, cutoff = 0.3, digits = 2, sort = T)
+```
+Loadings:
+     MR2   MR3   MR4   MR1  
+ar5   0.97                  
+ar13  0.81                  
+ar12        0.68            
+ar14        0.54            
+ar15        0.83            
+ar2               0.70      
+ar9               0.72      
+ar4   0.44             -0.33
+ar6               0.44      
+ar7               0.34      
+ar11                    0.33
+ar23  0.42        0.31      
+ar25              0.43      
+ar26  0.34  0.37            
 
+                MR2  MR3  MR4  MR1
+SS loadings    2.24 1.76 1.67 0.41
+Proportion Var 0.16 0.13 0.12 0.03
+Cumulative Var 0.16 0.29 0.41 0.43
+
+```{r}
+print(facan_newresult$loadings, cutoff = 0.4, digits = 2, sort = T)
+```
+ MR2   MR3   MR4   MR1  
+ar5   0.97                  
+ar13  0.81                  
+ar12        0.68            
+ar14        0.54            
+ar15        0.83            
+ar2               0.70      
+ar9               0.72      
+ar4   0.44                  
+ar6               0.44      
+ar7                         
+ar11                        
+ar23  0.42                  
+ar25              0.43      
+ar26                        
+
+                MR2  MR3  MR4  MR1
+SS loadings    2.24 1.76 1.67 0.41
+Proportion Var 0.16 0.13 0.12 0.03
+Cumulative Var 0.16 0.29 0.41 0.43
+
+The items are distributed..... 
+
+###Visualize the factor structure.
+
+```{r}
+fa.diagram(facan_newresult, digits = 2)
 ```
 
-## Run linear regression
+### Run linear regression
 
 Calculate the factor scores.
 
 ```{r}
-
+facan_newresult$scores
 ```
 
-Bind factor scores to the original dataset.
+## Bind factor scores to the original dataset.
 
 ```{r}
-
+animalnew <- animal %>% 
+  cbind(facan_newresult$scores)%>% 
+  rename(animal_use = MR2, animal_research = MR4, animal_rights = MR3)
 ```
 
 Run the logistic regression.
 
 ```{r}
-
+regres <- lm(liberal ~ animal_use + animal_research + animal_rights, data = animalnew)
+summary(regres)
 ```
+Result of regression 
+
+Residuals:
+     Min       1Q   Median       3Q      Max 
+-2.21141 -0.69090  0.06627  0.27019  2.17779 
+
+Coefficients:
+                Estimate Std. Error t value Pr(>|t|)    
+(Intercept)      2.90746    0.06836  42.529   <2e-16 ***
+animal_use      -0.03386    0.09034  -0.375    0.708    
+animal_research  0.06383    0.12754   0.500    0.618    
+animal_rights    0.13406    0.13102   1.023    0.308    
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+Residual standard error: 0.8428 on 148 degrees of freedom
+  (2 observations deleted due to missingness)
+Multiple R-squared:  0.03287,	Adjusted R-squared:  0.01326 
+F-statistic: 1.677 on 3 and 148 DF,  p-value: 0.1746
+
+Linear regreesion analysis indicates that attitude towards animal rights is the best predictor of how liberal a person is (B=0.13; p<0.001)
+
+```{r}
+regres <- lm(party ~ animal_use + animal_research + animal_rights, data = animalnew)
+summary(regres)
+```
+
