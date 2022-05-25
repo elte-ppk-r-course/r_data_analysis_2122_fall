@@ -206,7 +206,7 @@ Create a scree plot to help the decision on how many factors to include.
 scree(items_ar)
 fa.parallel(items_ar)
 ```
- Parallel analysis, as shown in the above scree plot indicated that the number of factors is 3 and the number of component is 2. Considering this result, the factor analysis will be conducted with 4 factors. 
+ Parallel analysis, as shown in the above scree plot indicated that the number of factors is 3 and the number of component is 2. Considering this result, the factor analysis will be conducted with 3 factors. 
  
 ## Run the factor analysis
 
@@ -217,8 +217,8 @@ facan_result <- fa(items_ar, nfactors = 3, fm = "minres", rotate = "oblimin")
 
 print(facan_result$loading, cutoff =0.3)
 ```
-Factor analysis was done with factoring method of minimum residual since the disribution assumption (normality mutivariate is not met). Oblimin rotate factor was used as they allow inter-factor correlation with the number of factor specief 4.
-since, i use factor loading cut point is 0.45 due to the number of participant is 154 (based on some resources if the partipants araoun 150, the the cut point of factor loading is .45). After revieweing the factor loading, there are 8 items below the cut point, those are: ar1, ar3, ar8, ar16, ar18,ar21, ar22, ar28. there are also 9 items cross loading (ar10, ar17, ar19, ar20,ar21,ar24, ar27), so those items will excluded from the scales. 
+Factor analysis was done with factoring method of minimum residual since the distribution assumption (normality mutivariate is not met). Oblimin rotate factor was used as they allow inter-factor correlation with the number of factor species 3.
+Since, I use factor loading cut point is 0.45 due to the number of participant is 154 (based on some resources if the partipants araoun 150, the the cut point of factor loading is .45). After reviewing the factor loading, there are 8 items below the cut point, those are: ar1, ar3, ar8, ar16, ar18,ar21, ar22, ar28. there are also 9 items cross loading (ar10, ar17, ar19, ar20,ar21,ar24, ar27), so those items will excluded from the scales. 
 finally there are 13 items will be tested further (ar2, ar4,ar5,ar6,ar9,ar11,ar12,ar13,ar14,ar15, ar23, ar25, ar26)
 
 
@@ -243,7 +243,7 @@ sort(facan_newresult$communality, decreasing = T)
 0.9250130 0.9051441 0.6991632 0.6422802 0.6022560 0.4914105 0.4713765 0.4632562 0.4015383 0.3934382 0.3716142 0.3683937 0.3242609 0.3011510 
 
 
-The results show that there are no item have communality score below 0.5, so all new items in the simple sacle will be included. 
+The results show that there are no item have communality score below 0.5, so all new items in the simple scale will be included. 
 
 ```{r}
 items_fix <- items_ar%>%
@@ -307,7 +307,10 @@ SS loadings    2.24 1.76 1.67 0.41
 Proportion Var 0.16 0.13 0.12 0.03
 Cumulative Var 0.16 0.29 0.41 0.43
 
-The items are distributed..... 
+in this test, I used cut of point for the loading factors was 0.4, so there are three factors as the result with the listed items above 0.4 factor loading. The items are distributed into three factors : MR3, MR4 and MR1. 
+MR 3 : ar5, ar13,ar4, ar23
+MR 4 : ar12, ar14,ar15
+MR 1 : ar2, ar9, ar6, ar25
 
 ###Visualize the factor structure.
 
@@ -331,7 +334,7 @@ animalnew <- animal %>%
   rename(animal_use = MR2, animal_research = MR4, animal_rights = MR3)
 ```
 
-Run the logistic regression.
+##Run the logistic regression.
 
 ```{r}
 regres <- lm(liberal ~ animal_use + animal_research + animal_rights, data = animalnew)
@@ -357,10 +360,30 @@ Residual standard error: 0.8428 on 148 degrees of freedom
 Multiple R-squared:  0.03287,	Adjusted R-squared:  0.01326 
 F-statistic: 1.677 on 3 and 148 DF,  p-value: 0.1746
 
-Linear regreesion analysis indicates that attitude towards animal rights is the best predictor of how liberal a person is (B=0.13; p<0.001)
+The regrssion model is not significat.
+Linear regression analysis indicates that attitudes towards animal (animal_rights, animal research,animal_use) are  not the best predictor of how liberal a person is (F= 1.677; p>0.05)
 
 ```{r}
 regres <- lm(party ~ animal_use + animal_research + animal_rights, data = animalnew)
 summary(regres)
 ```
+Residuals:
+    Min      1Q  Median      3Q     Max 
+-2.3625 -1.0691  0.6005  1.0608  1.5253 
 
+Coefficients:
+                Estimate Std. Error t value Pr(>|t|)    
+(Intercept)      2.90161    0.09984  29.062   <2e-16 ***
+animal_use       0.22663    0.13193   1.718   0.0879 .  
+animal_research  0.17158    0.18627   0.921   0.3585    
+animal_rights   -0.22429    0.19135  -1.172   0.2430    
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+Residual standard error: 1.231 on 148 degrees of freedom
+  (2 observations deleted due to missingness)
+Multiple R-squared:  0.03141,	Adjusted R-squared:  0.01178 
+F-statistic:   1.6 on 3 and 148 DF,  p-value: 0.1919
+
+The linear regression model is not significant .
+Linear regression analysis indicates that attitude towards animal (animal_rights, animal research,animal_use)are  not the best predictor of people's political party (F= 1.677; p>0.05)
