@@ -2,8 +2,10 @@
 title: "Assignent Factor Analyisis"
 author: "Marton Kovacs"
 date: '2022-05-24'
-output: html_document
-editor_options: 
+output:
+  pdf_document: default
+  html_document: default
+editor_options:
   chunk_output_type: console
 ---
 
