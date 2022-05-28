@@ -3,8 +3,10 @@ title: "Assignment_3_mode comparison_AM"
 author: "Marton Kovacs"
 date: '2022-05-08'
 output:
-  word_document: default
   html_document: default
+  word_document: default
+editor_options: 
+  chunk_output_type: console
 ---
 
 In this lab assignment you are going to work with (simulated) data related to perioperative pain and its psychological and hormonal predictors. In the assignment you will assess the added benefit of including some psychological and hormonal predictors to the already established demographic predictors of pain.
@@ -66,8 +68,7 @@ library(psych)
 library(car)
 library(broom)
 
-
-pain <- read_excel("C:/Users/Lenovo/Downloads/assignment_3_dataset (1).xlsx")
+pain <- read_excel("C:/Users/Lenovo/Downloads/assignment_3dataset.xlsx")
 
 
 ```
@@ -266,7 +267,7 @@ Compare the two models in terms of how much variance they explain of pain’s va
 #Create the simple model and get the results of the model that needs to be reported based on the What to report section. 
 
 ```{r}
-simple_mod<- lm(pain ~ age + sex, data = pain_final)
+simple_mod<- lm(pain ~ age + sex, data = pain_updated)
 summary(simple_mod) 
 ```
 All predictors simultaneously can predict pain, with F(2, 156) = 7.511, p < 0.01. All predictors could explain 8% variance of pain (R-squared=0.08). The equation for the model is: 
@@ -291,8 +292,6 @@ error models were not all fitted to the same size of dataset
 
 )
 ```{r}
-summary(complex_mode_final
-        anova(simple_mod_final, complex_mod_final)
-model1 <- glance(simple_mod_final)
-model2 <- glance(complex_mod_final)
+anova(simple_mod, complex_mod_final)
 ```
+

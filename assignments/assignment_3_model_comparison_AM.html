@@ -508,7 +508,7 @@ extension of the datafile.</p>
 <pre class="r"><code>library(readxl)
 library(tidyverse)</code></pre>
 <pre><code>## ── Attaching packages ─────────────────────────────────────── tidyverse 1.3.1 ──</code></pre>
-<pre><code>## ✔ ggplot2 3.3.5     ✔ purrr   0.3.4
+<pre><code>## ✔ ggplot2 3.3.6     ✔ purrr   0.3.4
 ## ✔ tibble  3.1.6     ✔ dplyr   1.0.8
 ## ✔ tidyr   1.2.0     ✔ stringr 1.4.0
 ## ✔ readr   2.1.2     ✔ forcats 0.5.1</code></pre>
@@ -536,8 +536,7 @@ library(tidyverse)</code></pre>
 ##     some</code></pre>
 <pre class="r"><code>library(broom)
 
-
-pain &lt;- read_excel(&quot;C:/Users/Lenovo/Downloads/assignment_3_dataset (1).xlsx&quot;)</code></pre>
+pain &lt;- read_excel(&quot;C:/Users/Lenovo/Downloads/assignment_3dataset.xlsx&quot;)</code></pre>
 </div>
 <div id="data-and-model-diagnostics" class="section level2">
 <h2>Data and model diagnostics</h2>
@@ -900,27 +899,27 @@ pain’s variability in the sample. Report Akaike information criterion
 likelihood ratio test comparing the two models.</p>
 <p>#Create the simple model and get the results of the model that needs
 to be reported based on the What to report section.</p>
-<pre class="r"><code>simple_mod&lt;- lm(pain ~ age + sex, data = pain_final)
+<pre class="r"><code>simple_mod&lt;- lm(pain ~ age + sex, data = pain_updated)
 summary(simple_mod) </code></pre>
 <pre><code>## 
 ## Call:
-## lm(formula = pain ~ age + sex, data = pain_final)
+## lm(formula = pain ~ age + sex, data = pain_updated)
 ## 
 ## Residuals:
 ##     Min      1Q  Median      3Q     Max 
-## -3.6617 -0.9974  0.1464  1.0508  3.5026 
+## -3.6911 -0.9382  0.1370  0.9966  3.3949 
 ## 
 ## Coefficients:
 ##             Estimate Std. Error t value Pr(&gt;|t|)    
-## (Intercept)  8.49145    0.94828   8.955 9.64e-16 ***
-## age         -0.08906    0.02304  -3.865 0.000163 ***
-## sexmale      0.10287    0.23268   0.442 0.659028    
+## (Intercept)  8.38743    0.91977   9.119 4.25e-16 ***
+## age         -0.08596    0.02235  -3.846 0.000176 ***
+## sexmale      0.06433    0.22590   0.285 0.776210    
 ## ---
 ## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
 ## 
-## Residual standard error: 1.464 on 156 degrees of freedom
-## Multiple R-squared:  0.08784,    Adjusted R-squared:  0.07614 
-## F-statistic: 7.511 on 2 and 156 DF,  p-value: 0.0007684</code></pre>
+## Residual standard error: 1.404 on 152 degrees of freedom
+## Multiple R-squared:  0.0889, Adjusted R-squared:  0.07691 
+## F-statistic: 7.416 on 2 and 152 DF,  p-value: 0.0008454</code></pre>
 <p>All predictors simultaneously can predict pain, with F(2, 156) =
 7.511, p &lt; 0.01. All predictors could explain 8% variance of pain
 (R-squared=0.08). The equation for the model is: pain = 8.49 - 0.09 *
@@ -965,6 +964,17 @@ pain (R-squared=0.398). The equation for the model is: pain = 0.34 -
 <h1>Compare the two models.</h1>
 <p>comparing two model with anova error models were not all fitted to
 the same size of dataset</p>
+<p>)</p>
+<pre class="r"><code>anova(simple_mod, complex_mod_final)</code></pre>
+<pre><code>## Analysis of Variance Table
+## 
+## Model 1: pain ~ age + sex
+## Model 2: pain ~ age + sex + STAI_trait + pain_cat + mindfulness + cortisol_saliva
+##   Res.Df    RSS Df Sum of Sq      F   Pr(&gt;F)    
+## 1    152 299.82                                 
+## 2    148 198.07  4    101.75 19.008 1.24e-12 ***
+## ---
+## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1</code></pre>
 </div>
 
 
