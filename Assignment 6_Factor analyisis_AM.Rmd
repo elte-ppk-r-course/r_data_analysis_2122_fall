@@ -3,8 +3,8 @@ title: "Assignent Factor Analyisis"
 author: "Marton Kovacs"
 date: '2022-05-24'
 output:
-  pdf_document: default
   html_document: default
+  pdf_document: default
 editor_options:
   chunk_output_type: console
 ---
@@ -153,7 +153,7 @@ cor_matrix
 
 ## Visualizing the correlation matrix
 
-Create a visualization of the results of the correlation matrix.
+## Create a visualization of the results of the correlation matrix.
 
 ```{r}
 cor.plot(cor_matrix, MAR=2.5, cex = 0.5, main = "Correlation matrix of the items animal rights scale", upper=F)
@@ -172,9 +172,7 @@ The KMO score of the animal rights scale is 0.88, therefore it can be concluded 
 ### Normality Test using Energy Package
 
 ```{r}
-install.packages("energy")
 library(energy)
-install.packages("MVN")
 library(MVN)
 
 ```
@@ -226,8 +224,8 @@ finally there are 13 items will be tested further (ar2, ar4,ar5,ar6,ar9,ar11,ar1
 
 ###Sort the communality scores in decreasing order.
 ```{r}
-install.packages("GPArotation")
 library(GPArotation)
+library(psych)
 ```
 
 ```{r}
@@ -389,3 +387,6 @@ F-statistic:   1.6 on 3 and 148 DF,  p-value: 0.1919
 
 The linear regression model is not significant .
 Linear regression analysis indicates that attitude towards animal (animal_rights, animal research,animal_use)are  not the best predictor of people's political party (F= 1.677; p>0.05)
+
+
+
