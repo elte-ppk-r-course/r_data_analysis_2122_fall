@@ -238,12 +238,9 @@ facan_newresult <-fa(items_new, nfactors =4)
 ```{r}
 sort(facan_newresult$communality, decreasing = T)
 ```
-sort(facan_newresult$communality, decreasing = T)
-     ar13       ar5      ar15       ar2      ar12       ar9       ar6       ar4      ar26      ar23      ar11       ar7      ar14      ar25 
-0.9250130 0.9051441 0.6991632 0.6422802 0.6022560 0.4914105 0.4713765 0.4632562 0.4015383 0.3934382 0.3716142 0.3683937 0.3242609 0.3011510 
 
+The results show that there are no item have communality score below 0.5, so all new items in the simple scale will be included.
 
-The results show that there are no item have communality score below 0.5, so all new items in the simple scale will be included. 
 
 ```{r}
 items_fix <- items_ar%>%
@@ -261,51 +258,10 @@ mean(facan_newresult$communality)
 ```{r}
 print(facan_newresult$loadings, cutoff = 0.3, digits = 2, sort = T)
 ```
-Loadings:
-     MR2   MR3   MR4   MR1  
-ar5   0.97                  
-ar13  0.81                  
-ar12        0.68            
-ar14        0.54            
-ar15        0.83            
-ar2               0.70      
-ar9               0.72      
-ar4   0.44             -0.33
-ar6               0.44      
-ar7               0.34      
-ar11                    0.33
-ar23  0.42        0.31      
-ar25              0.43      
-ar26  0.34  0.37            
-
-                MR2  MR3  MR4  MR1
-SS loadings    2.24 1.76 1.67 0.41
-Proportion Var 0.16 0.13 0.12 0.03
-Cumulative Var 0.16 0.29 0.41 0.43
 
 ```{r}
 print(facan_newresult$loadings, cutoff = 0.4, digits = 2, sort = T)
 ```
- MR2   MR3   MR4   MR1  
-ar5   0.97                  
-ar13  0.81                  
-ar12        0.68            
-ar14        0.54            
-ar15        0.83            
-ar2               0.70      
-ar9               0.72      
-ar4   0.44                  
-ar6               0.44      
-ar7                         
-ar11                        
-ar23  0.42                  
-ar25              0.43      
-ar26                        
-
-                MR2  MR3  MR4  MR1
-SS loadings    2.24 1.76 1.67 0.41
-Proportion Var 0.16 0.13 0.12 0.03
-Cumulative Var 0.16 0.29 0.41 0.43
 
 in this test, I used cut of point for the loading factors was 0.4, so there are three factors as the result with the listed items above 0.4 factor loading. The items are distributed into three factors : MR3, MR4 and MR1. 
 MR 3 : ar5, ar13,ar4, ar23
@@ -340,25 +296,7 @@ animalnew <- animal %>%
 regres <- lm(liberal ~ animal_use + animal_research + animal_rights, data = animalnew)
 summary(regres)
 ```
-Result of regression 
 
-Residuals:
-     Min       1Q   Median       3Q      Max 
--2.21141 -0.69090  0.06627  0.27019  2.17779 
-
-Coefficients:
-                Estimate Std. Error t value Pr(>|t|)    
-(Intercept)      2.90746    0.06836  42.529   <2e-16 ***
-animal_use      -0.03386    0.09034  -0.375    0.708    
-animal_research  0.06383    0.12754   0.500    0.618    
-animal_rights    0.13406    0.13102   1.023    0.308    
----
-Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
-
-Residual standard error: 0.8428 on 148 degrees of freedom
-  (2 observations deleted due to missingness)
-Multiple R-squared:  0.03287,	Adjusted R-squared:  0.01326 
-F-statistic: 1.677 on 3 and 148 DF,  p-value: 0.1746
 
 The regrssion model is not significat.
 Linear regression analysis indicates that attitudes towards animal (animal_rights, animal research,animal_use) are  not the best predictor of how liberal a person is (F= 1.677; p>0.05)
@@ -367,23 +305,6 @@ Linear regression analysis indicates that attitudes towards animal (animal_right
 regres <- lm(party ~ animal_use + animal_research + animal_rights, data = animalnew)
 summary(regres)
 ```
-Residuals:
-    Min      1Q  Median      3Q     Max 
--2.3625 -1.0691  0.6005  1.0608  1.5253 
-
-Coefficients:
-                Estimate Std. Error t value Pr(>|t|)    
-(Intercept)      2.90161    0.09984  29.062   <2e-16 ***
-animal_use       0.22663    0.13193   1.718   0.0879 .  
-animal_research  0.17158    0.18627   0.921   0.3585    
-animal_rights   -0.22429    0.19135  -1.172   0.2430    
----
-Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
-
-Residual standard error: 1.231 on 148 degrees of freedom
-  (2 observations deleted due to missingness)
-Multiple R-squared:  0.03141,	Adjusted R-squared:  0.01178 
-F-statistic:   1.6 on 3 and 148 DF,  p-value: 0.1919
 
 The linear regression model is not significant .
 Linear regression analysis indicates that attitude towards animal (animal_rights, animal research,animal_use)are  not the best predictor of people's political party (F= 1.677; p>0.05)
