@@ -3,46 +3,23 @@ title: 'Assignment 6: Logistic regression'
 author: "Marton Kovacs"
 date: '2022-05-29'
 output: html_document
----
-
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-```
-
-## R Markdown
-
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
-
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
-
-```{r cars}
-summary(cars)
-```
-
-## Including Plots
-
-You can also embed plots, for example:
-
-```{r pressure, echo=FALSE}
-plot(pressure)
-```
-
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
-
-
-
----
-title: 'assignment 4: logistic regression'
-author: "Marton Kovacs"
-date: '2022-05-26'
-output: html_document
 editor_options: 
   chunk_output_type: console
+---
+
+
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
+library(psych)
+library(dplyr)
+library(tidyr)
+
+library(readxl)
+library(car)
+library(broom)
 ```
 
 # Background story
@@ -62,11 +39,17 @@ Use the data file called ‘assignment_4_dataset’, from the 'data/' folder.
 This is the training dataset of the Titanic dataset from the Kaggle Titanic Challenge (https://www.kaggle.com/c/titanic/overview), a prediction challenge for people who are just starting to learn about machine learning and other statistical prediction techniques. The following description is available for the dataset:
 
 ## Metadata
+```{r}
+library(foreign)
+```
 
 ```{r echo = FALSE, warning = FALSE, message = FALSE}
-metadata <- readr::read_tsv(here::here("data/assignment_6_metadata.tsv"))
-metadata %>% 
+
+titanic_pass <- read.spss("C:\\Users\\Lenovo\\Desktop\\Git project\\r_data_analysis_2122_fall\\assignments\\data\\assignment_6_dataset.sav")
+
+titanic_pass %>% 
   knitr::kable()
+glimpse(titanic_pass)
 ```
 
 # Task
@@ -104,29 +87,87 @@ In your discussion of the findings, briefly interpret the results of the above a
 Read the dataset used in this assignment. Pay attention to the extension of the datafile.
 
 ```{r}
+titanic_pass <- read.spss("C:\\Users\\Lenovo\\Desktop\\Git project\\r_data_analysis_2122_fall\\assignments\\data\\assignment_6_dataset.sav")
 
+titanic_pass %>% 
+  knitr::kable()
 
 ```
 
 ## EDA
 
 ```{r}
+glimpse(titanic_pass)
 ```
+```{r}
+summary(titanic_pass)
+```
+```{r}
+
+```
+
 
 ## Clean the data
+checking the missing data
+
 
 ```{r}
+class(titanic_pass$Age)
+
+unique(titanic_pass$Age)
 ```
+
+
+```{r}
+sum(is.na(titanic_pass$PassengerId))
+sum(is.na(titanic_pass$Survived))
+sum(is.na(titanic_pass$Pclass))
+sum(is.na(titanic_pass$Name))
+sum(is.na(titanic_pass$Sex))
+sum(is.na(titanic_pass$Age))
+sum(is.na(titanic_pass$SibSp))
+sum(is.na(titanic_pass$Parch))
+sum(is.na(titanic_pass$Ticket))
+sum(is.na(titanic_pass$Fare))
+sum(is.na(titanic_pass$Cabin))
+sum(is.na(titanic_pass$Embarked))
+
+```
+Changing the missing value of age variable with mean. 
+
+```{r}
+mean(titanic_pass$Age, na.rm = TRUE)
+age_median <- median(titanic_pass$Age, na.rm = TRUE)
+titanic_pass[is.na(titanic_pass$Age), "Age"] <- 29
+
+```
+```{r}
+
+titanic_pass <- titanic_pass%>%
+  mutate(Age=replace_na(Age, median(Age, na.rm = TRUE)))
+
+```
+
+
+
 
 ## Creating a datatable for Sue, Kate, and Leonardo
-
-```{r}
 ```
+```{r}
+
+```
+
+
+
+
 
 ## Building the null model
 
+
 ```{r}
+
 ```
+
 
 ## Building the model
 
