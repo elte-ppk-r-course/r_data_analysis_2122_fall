@@ -1,0 +1,402 @@
+--
+title: "Final Project Coffe Analysis "
+author: "Ariana Marastutir"
+date: "5/06/2022"
+output: 
+  html_document: 
+    keep_md: yes
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+# Introduction
+
+The objective of this project is to explore the contributing factors in determining the quality of the coffee bean. The quality of coffee bean is scored as the cupping score as a standarized scale and in this data set will be labeled as the total_cup_points.  The cupping form is where we score coffee on a standardized scale—with points usually ranging from 6-10 in ten different categories such as Fragrance/Aroma, Flavor, Body, Acidity, and Balance. These scores get summed together to get a final score, usually in the 80-90 range. 
+I will explore the most significant predictors for the quality of bean, whether there is any specific predictors that play as the most significant component in predicting the quality of coffee bean. I will use aroma, flavor, aftertaste, acidity, body, balance, uniformity, clean-cup, sweetness, cupper points and moisture as the predictors in the model.
+
+
+
+
+## Loading Library and Data
+The data used in this project was obtained from the [GitHub TidyTuesday project](coffee_ratings <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-07-07/coffee_ratings.csv')
+
+
+
+```{r}
+library(tidyverse)
+library(DT)
+library(psych)
+library(car)
+library(broom)
+library(ggplot2)
+```
+
+```{r}
+coffee_ratings <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-07-07/coffee_ratings.csv')
+
+```
+##Preliminary Exploration and Data Cleaning
+
+```{r}
+glimpse(coffee_ratings)
+```
+There are some variables need to be convert to other data type due to the nature and structure of the data 
+
+```{r}
+coffee_ratings <- coffee_ratings %>%
+  mutate(species = as.factor(species),
+  owner = as.factor(owner),
+  country_of_origin = as.factor(country_of_origin),
+  farm_name = as.factor(farm_name),
+  company = as.factor(company),
+mill=as.factor(mill),
+altitude = as.factor(altitude),
+region = as.factor(region),
+producer = as.factor(producer),
+bag_weight =as.factor(bag_weight),
+in_country_partner= as.factor(in_country_partner),
+harvest_year= as.factor(harvest_year),
+grading_date = as.factor(grading_date),
+owner_1 = as.factor(owner_1),
+variety = as.factor(variety),
+processing_method = as.factor(processing_method),
+color = as.factor(color),
+expiration = as.factor (expiration),
+certification_body = as.factor(certification_body),
+certification_address = as.factor(certification_address),
+certification_contact = as.factor(certification_contact),
+unit_of_measurement = as.factor(unit_of_measurement))
+
+glimpse(coffee_ratings)
+```
+### Missing value
+```{r}
+colSums(is.na(coffee_ratings))
+coffee_ratings <- coffee_ratings %>%
+  filter(total_cup_points!= " ")
+```
+# EDA
+
+```{r}
+install.packages("ggthemes", repos = 'http://cran.us.r-project.org')
+library(ggthemes)
+```
+
+```{r}
+country_table<-coffee_ratings %>%
+    count(country_of_origin = factor(country_of_origin)) %>% 
+    mutate(pct = prop.table(n)) %>%
+    arrange(-pct) %>% 
+    tibble()
+
+ggplot(
+  country_table %>% filter(country_of_origin != "NA"),
+  mapping = aes(
+    x = reorder(country_of_origin, n),
+    y = pct,
+    group = 1,
+    label = scales::percent(pct)
+  )
+) +
+  theme_fivethirtyeight() +
+  geom_bar(stat = "identity",
+           fill = "#634832") +
+  geom_text(position = position_dodge(width = 0.9),
+            # move to center of bars
+            hjust = -0.05,
+            #Have Text just above bars
+            size = 2.5) +
+  labs(x = "Country of Origin",
+       y = "Proportion of Dataset") +
+  theme(axis.text.x = element_text(
+    angle = 90,
+    vjust = 0.5,
+    hjust = 1
+  )) +
+  ggtitle("Country of Origin Listed in Coffee Ratings Dataset " ) +   # This Emoji messes up this line in R markdown but hey, it
+  scale_y_continuous(labels = scales::percent) +                        # looks good.
+  coord_flip()
+
+```
+
+From the graph, it can be inferred that over 45% of coffee bean is produced by Latin America countries, suc as Mexico, Colombia, Guatemala and Brazil.
+Then, we will see, how the proportion of the species of the coffee bean. Between robusta and arabica, which one more popular. 
+
+```{r}
+species_table<-coffee_ratings %>% 
+    count(species = factor(species)) %>% 
+    mutate(pct = prop.table(n)) %>% tibble()
+ggplot(species_table,mapping=aes(x=species,y=pct,group=1,label=scales::percent(pct)))+
+   theme_fivethirtyeight()+
+  geom_bar(stat="identity",
+           fill=c("#634832","#3b2f2f"))+
+    geom_text(position = position_dodge(width=0.9),    # move to center of bars
+              vjust=-0.5, #Have Text just above bars
+              size = 3)+
+  scale_y_continuous(labels = scales::percent)+
+  ggtitle("Arabica vs Robusta Proportion in Dataset ")
+```
+Arabica coffee bean is more popular than Robusta with 96% of the total production, and Robusta bean only share 2%. 
+
+```{r}
+arabica_countries<-coffee_ratings %>% 
+  filter(species =="Arabica") %>% 
+    count(species=factor(species),
+          country=country_of_origin) %>% 
+    mutate(pct = prop.table(n)) %>% 
+    arrange(-n) %>% 
+  tibble()
+
+ggplot(arabica_countries %>% filter(country!="NA"),
+       mapping=aes(x=reorder(country,n),y=pct,group=1,label=scales::percent(pct))) + 
+  theme_fivethirtyeight()+
+  geom_bar(stat="identity",
+           fill="#634832")+
+  geom_text(position = position_dodge(width = 0.9),
+            # move to center of bars
+            hjust = -0.05,
+            #Have Text just above bars
+            size = 2.5) +
+  ggtitle("Arabica Coffee Countries (for our dataset) ") +
+   scale_y_continuous(labels = scales::percent) +                     
+  coord_flip()
+```
+Mexico is the highest producer of the coffee bean with occupied 18% of the total production, followed by Colombia and Guatemala with 13% and Brazil with 10%. 
+
+```{r}
+robusta_countries<-coffee_ratings %>% 
+    filter(species =="Robusta") %>% 
+    count(species = factor(species),
+          country=country_of_origin) %>% 
+    mutate(pct = prop.table(n)) %>%
+    arrange(-n) %>% 
+  tibble()
+```
+
+```{r}
+ggplot(robusta_countries %>% filter(country!="NA"),
+       mapping=aes(x=reorder(country,n),y=pct,group=1,label=scales::percent(pct))) + 
+  theme_fivethirtyeight()+
+  geom_bar(stat="identity",
+           fill="#3b2f2f")+
+  geom_text(position = position_dodge(width = 0.9),
+            # move to center of bars
+            hjust = -0.05,
+            #Have Text just above bars
+            size = 2.5) +
+  ggtitle("Robusta Coffee Countries (for our dataset) ") +
+   scale_y_continuous(labels = scales::percent) +                     
+  coord_flip()
+```
+Robusta bean is mainly produced by India (46.4%), Uganda (35.7%), United States and Ecuador with 7%, and finally Vietnam with 3.6%. 
+
+```{r}
+coffee_ratings %>% 
+  filter(country_of_origin %in% c("India","Uganda","Ecuador","United States","Vietnam")) %>% 
+  count(country_of_origin,species) %>% 
+  group_by(country_of_origin)
+```
+
+```{r}
+ggplot(coffee_ratings %>% filter(country_of_origin %in% c("India","Uganda","Ecuador","United States","Vietnam")),
+       mapping=aes(x=country_of_origin,fill=species))+
+  theme_fivethirtyeight()+
+  geom_bar(position="fill")+
+  scale_fill_manual(values=c("#BE9B7B", "#3b2f2f"))+
+  theme(legend.title = element_blank())+
+  ggtitle("Arabica/Robusta Ratio from countries with Robusta data ")
+
+```
+Although India is the main producer of Robusta coffee bean, but India also produce Arabica with around 10% of the country production, and even Vietnam, Uganda and United states also produce more Arabica coffe bean than Robusta coffee bean. 
+
+
+```{r}
+library(lubridate)
+```
+
+# Getting the year data
+```{r}
+coffee_ratings$new_dates<-coffee_ratings$grading_date %>% mdy()
+coffee_ratings$score_year<- coffee_ratings$new_dates %>% year()
+```
+
+# Data set for vizualisation 
+```{r}
+  top_annual_score<- coffee_ratings %>%
+  group_by(species,
+           score_year,
+           country_of_origin) %>% 
+  summarise(max_points = max(total_cup_points)) %>% 
+  filter(max_points == max(max_points)) %>% 
+  arrange(-max_points)
+```
+
+```{r}
+ggplot(top_annual_score,
+       mapping=aes(x=score_year,
+                   y=max_points,
+                   label=paste0(score_year,"\n",country_of_origin,"\n", max_points),
+                   color=country_of_origin))+
+  theme_fivethirtyeight()+
+  geom_text(position = position_dodge(width = 0.9),
+            # move to center of bars
+            hjust =-0.2,
+            #Have Text just above bars
+            size =3.5) +
+  geom_point(size=4,
+             alpha=0.8)+
+  theme(legend.position = "none")+
+  facet_wrap(~species)+
+  ggtitle(" Top Scoring Coffees by Year - Faceted on Species ")
+```
+
+The graph give us a glimpse of the production of the coffee bean year by year based on the species (Robusta and Arabica). 
+Arabica beans from Ethiopia scored the highest with a score of 90.58 and for Robusta Beans Uganda had the highest score of 83.75.
+
+# Removing irrelavant variables 
+```{r}
+coffee_new <-coffee_ratings %>%
+  select(total_cup_points, species, country_of_origin, region, altitude, producer, variety, aroma, processing_method, flavor, aftertaste, acidity, body, balance, uniformity, clean_cup, sweetness,cupper_points, moisture, category_one_defects, category_two_defects, quakers, color, altitude_low_meters, altitude_mean_meters, altitude_high_meters)
+glimpse(coffee_new)
+```
+There are some variables dropped from the data set, since irrelevant variables to this analysis.  
+
+
+```{r}
+coffee_relevant <-coffee_ratings %>%
+  select(total_cup_points, species, aroma, processing_method, flavor, aftertaste, acidity, body, balance, uniformity, clean_cup, sweetness,cupper_points)
+glimpse(coffee_relevant)
+```
+converting variables to integer
+
+```{r}
+coffee_relevant<- coffee_relevant %>%
+  mutate(total_cup_points = as.integer(total_cup_points),
+    aroma = as.integer(aroma),
+    flavor = as.integer(flavor),
+    aftertaste = as.integer(aftertaste),
+    acidity= as.integer(acidity),
+    body= as.integer(body),
+    balance= as.integer(balance),
+    uniformity= as.integer(uniformity),
+    clean_cup= as.integer(clean_cup),
+    sweetness= as.integer(sweetness),
+    cupper_points= as.integer(cupper_points))
+glimpse(coffee_relevant)    
+```
+```{r}
+coffee_relevant<- coffee_relevant %>%
+  mutate(total_cup_points = as.numeric(total_cup_points),
+    aroma = as.numeric(aroma),
+    flavor = as.numeric(flavor),
+    aftertaste = as.numeric(aftertaste),
+    acidity= as.numeric(acidity),
+    body= as.numeric(body),
+    balance= as.numeric(balance),
+    uniformity= as.numeric(uniformity),
+    clean_cup= as.numeric(clean_cup),
+    sweetness= as.numeric(sweetness),
+    cupper_points= as.numeric(cupper_points))
+glimpse(coffee_relevant)    
+```
+
+
+
+
+## Correlation matrix
+```{r}
+cor(coffee_relevant[sapply(coffee_relevant,is.numeric)])
+```
+summary of correlation :
+- The highest correlation is between flavor and total_cup_points
+- All the variables have a positive correlation, no variables have a negative correlation.
+
+# Regression analysis on the total cup points
+
+Model overall regression is directed to predict the total cup points based on the all variables predictors
+
+```{r}
+model<- lm(total_cup_points ~ aroma+ flavor+aftertaste+acidity+body+balance+uniformity+clean_cup+sweetness+cupper_points, data = coffee_relevant)
+summary(model)
+```
+## Checking for influential outliers
+```{r}
+cooksd <- cooks.distance(model)
+
+plot(cooksd, pch="*", cex=2, main="Influential Obs by Cooks distance")
+abline(h = 3*mean(cooksd, na.rm=T), col="red")
+text(x=1:length(cooksd)+1, y=cooksd, labels=ifelse(cooksd>4*mean(cooksd, na.rm=T),names(cooksd),""), col="red")
+
+```
+
+```{r}
+coffe_clean <- coffee_relevant[-1311, ]
+```
+
+```{r}
+model<- lm(total_cup_points ~ aroma+ flavor+aftertaste+acidity+body+balance+uniformity+clean_cup+sweetness+cupper_points, data = coffe_clean)
+summary(model)
+```
+## Assumption checking
+### Linearity
+```{r}
+plot(model, which =1 )
+```
+
+### Normality of residual
+```{r}
+plot(model, which = 2)
+```
+
+
+### Homogenety of variance
+```{r}
+plot(model, which=3)
+```
+
+### Multicolinearity
+```{r}
+vif(model)
+```
+
+All variables have VIF below 5 which mean that there is no problem with multicolinearity .
+
+
+## Model comparison
+### Model 1- simple
+
+```{r}
+model1 <- lm(total_cup_points ~ aftertaste + acidity+clean_cup, data = coffe_clean)
+
+summary(model1)
+```
+The model simultaneously can predict after cup points with F(3, 1334)=968,9, p<0.001. All predictors can explain 68% variance of the total cup of points. 
+
+### Model 2 : complex
+```{r}
+model2 <- lm(total_cup_points ~ aftertaste + acidity+clean_cup+aroma+balance+uniformity, data=coffe_clean)
+summary(model2)
+```
+The model simultaneously can predict after cup points with F(3, 1331)=741.7, p<0.001. All predictors can explain 76% variance of the total cup of points. 
+### Comparing the two model
+
+```{r}
+anova(model1, model2)
+sum_model1 <- glance(model1)
+sum_model2 <- glance(model2)
+
+comparison_mod <- sum_model1%>%
+  rbind(sum_model2) %>%
+  mutate(model= c ("simple", "complex")) %>%
+  relocate (model) %>%
+  as.data.frame()
+comparison_mod
+```
+AIC score of simple model (4916,48) is higher than complex model (4504,82), so it can be concluded that simple model is better in explaining the predictor of the total cup points of the coffee ratings. 
+
+

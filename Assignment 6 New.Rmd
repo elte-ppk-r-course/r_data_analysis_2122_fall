@@ -1,0 +1,402 @@
+---
+title: "Assignment 6: Logistic regression"
+author: "Marton Kovacs / Zoltan Kekecs"
+output: html_document
+editor_options: 
+  chunk_output_type: inline
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+```
+# Background story
+
+In this lab assignment you are going to work with data related to the survival of passengers of the RMS Titanic. “The sinking of the Titanic is one of the most infamous shipwrecks in history. On April 15, 1912, during her maiden voyage, the widely considered “unsinkable” RMS Titanic sank after colliding with an iceberg. Unfortunately, there weren’t enough lifeboats for everyone onboard, resulting in the death of 1502 out of 2224 passengers and crew. While there was some element of luck involved in surviving, it seems some groups of people were more likely to survive than others.” (Quote from the Kaggle Titanic Challenge).
+
+For the sake of this assignment, let’s imagine that you are called as an expert to a court case: Kate, one of the survivors of the Titanic accident is suing her __father, Leonardo, for not accompanying Kate and her mother Sue on the trip__ and this way decreasing their chances of survival. The family planned to move to the US back in 1912. __They bought 3rd class tickets for the three of them for 8 British Pounds each. (They did not get cabins with their 3rd class tickets.)__ The plan was that they embark in Southampton and all of them got on board, but Leonardo got separated from them in the rush of passengers during boarding. Later it turned out that Leonardo deliberately got separated from them and got off the boat before it’s departure, to run away and live with his mistress. __Kate was only 4 at the time, and Sue was 20.__ During the accident __Kate got on one of the last lifeboats and was later rescued, but there was no room for Sue on the lifeboat, and she did not survive the disaster.__
+
+Now 20 years later Kate is suing her father for leaving them on the boat, because she thinks that this eventually led to Sue’s death, as the absence of Leonardo decreased their chances of survival.
+
+You are called in as an expert to this court case. Your task is to present a report about whether the presence of Leonardo statistically could have led to an improved chance of survival.
+
+# Dataset
+
+Use the data file called ‘assignment_4_dataset’, from the 'data/' folder.
+
+This is the training dataset of the Titanic dataset from the Kaggle Titanic Challenge (https://www.kaggle.com/c/titanic/overview), a prediction challenge for people who are just starting to learn about machine learning and other statistical prediction techniques. The following description is available for the dataset:
+
+## Metadata
+
+```{r}
+library(dplyr)
+
+```
+```{r}
+library(haven)
+```
+
+
+```{r echo = FALSE, warning = FALSE, message = FALSE}
+titanic_new01 <- read_spss("C:/Users/Lenovo/Desktop/RStudio/AssignmentRStudio/Final_Assignment/data/assignment_6_dataset.sav")
+titanic_new01 %>% 
+  knitr::kable()
+```
+```{r}
+glimpse(titanic_new01)
+```
+
+# Task
+
+As usual, start with exploring your dataset. Do descriptive and exploratory analysis including visualization to understand the data and to see what type of data you are dealing with. 
+
+You should build a statistical model with which you can accurately estimate Kate’s and Sue’s chances of survival. First you should fit a statistical model (for example a logistic regression model) on the dataset, calculate the regression equation, and use that equation to compute the survival probability for Kate and Sue separately with and without having Leonardo on board the ship with them.
+
+You can use whichever predictor you would like, but you need to build a model that is at least as accurate so that it can correctly predict the outcome value within the sample with at least 72% accuracy for BOTH those who actually survived and who actually died in the disaster. You need to check this in the Classification table. So it is not enough to have 72% overall correct percentage! In order to be able to reach this prediction accuracy you might have to use some special predictors or to do some feature engineering. A comprehensive exploratory analysis including the visualisation of the relationship of different predictors might help in this. Keep in mind that this is one of the most popular prediction challenges on Kaggle, so there is plenty of discussion and guides on the web about different models and features. If you get stuck, you can look these up to improve your prediction performance.
+
+You do not need to check model assumptions in this assignment (but you can do so if you want to and this might help you improve your prediction performance). 
+
+# What to report
+
+When you have arrived at a satisfactory model describe the final model to the reader so that it is clear how is the model built up, and that based on the description the reader could reproduce your model.
+
+Report about the goodness of fit of the model, whether it is significantly better than the null model (based on the AIC and chi^2 test statistics), and how effective is your model at predicting the outcome (based on McFadden R^2, and the correct prediction percentages in the classification table of the final model). Be sure to report the total correct prediction percentage of the final model and also the correct prediction percentages separately for those who actually died, and those who actually survived.
+
+Also, report the statistics describing the coefficients of the predictors in a table format (for each predictor, this table should include the following: logit regression coefficients, Odds ratios, and 95% confidence intervals for the Odds ratios, Chi^2 test statistics and p values, and AIC values for the reduced models). 
+
+Report which were the most influential predictors in the model, and which were the predictors which did not seem to have unique added value to the model.
+
+Write up the regression equation of the model in the form of 𝑌 = 𝑏0 + 𝑏1 ∗ X1 + 𝑏2 ∗ X2 +…+ bn * Xn, in which you use the actual regression coefficients of your models. (b0 stands for the intercept and b1, b2 … bn stand for the model coefficients for each of the predictors, and X1, X2, … Xn denote the predictors).
+
+Finally, report the predicted probability of survival for Kate and Sue separately with and without having Leonardo on board the ship with them. (So you will have to estimate 4 probabilities in total, two for Kate and two for Sue). It is important that this is in the probability scale (since the jury does not know what logit means and how to interpret it).
+
+# What to discuss
+
+In your discussion of the findings, briefly interpret the results of the above analyses in light of the court case. Based on your results do you find it likely that the presence of Leonardo (spouse to Sue and parent to Kate) would have improved the survival chances of Sue and Kate? What is the best predictor of survival in the model and how does the presence of a spouse and presence of a parent compare to its influence?
+
+# Solution
+
+## Read the data
+
+Read the dataset used in this assignment. Pay attention to the extension of the datafile.
+
+##  EDA
+```{r}
+glimpse(titanic_new01)
+typeof(titanic_new01)
+nrow(titanic_new01)
+```
+
+
+
+```{r}
+cols <- c("Survived", "Parch","Pclass", "Sex", "Embarked" )
+titanic_new01[cols] <- lapply (titanic_new01 [cols], factor)
+sapply(titanic_new01, class)
+```
+
+
+
+## Clean the data
+
+```{r}
+class(titanic_new01)
+unique(titanic_new01)
+sum(is.na(titanic_new01$PassengerId))
+sum(is.na(titanic_new01$Survived))
+sum(is.na(titanic_new01$Pclass))
+sum(is.na(titanic_new01$Name))
+sum(is.na(titanic_new01$Sex))
+sum(is.na(titanic_new01$Age))
+sum(is.na(titanic_new01$SibSp))
+sum(is.na(titanic_new01$Parch))
+sum(is.na(titanic_new01$Ticket))
+sum(is.na(titanic_new01$Fare))
+sum(is.na(titanic_new01$Cabin))
+sum(is.na(titanic_new01$Embarked))
+```
+There are 177 missing value in the variable of age. This missing value will input with median of the age variable. 
+
+#Changing the missing value of age variable with median. 
+
+```{r}
+median(titanic_new01$Age, na.rm = TRUE)
+age_median <- median(titanic_new01$Age, na.rm = TRUE)
+
+```
+missing values are replaced by median of age variable (28)
+```{r}
+titanic_new01 <- titanic_new01%>%
+  mutate(Age=replace_na(Age, median(Age, na.rm = TRUE)))
+sum(is.na(titanic_new01$Age))
+
+```
+There are no more missing values in age variable.
+
+### creating dummy variables
+
+checking data
+
+
+```{r}
+
+library(fastDummies)
+titanic_new01 <- dummy_cols(titanic_new01, select_columns = "Sex")
+head(titanic_new01, 5)
+
+```
+
+
+## Creating a datatable for Sue, Kate, and Leonardo
+
+```{r}
+
+
+```
+
+## Building the null model
+
+```{r}
+nullmodel <- glm(Survived ~ 1, data = titanic_new01, family = binomial)
+summary(nullmodel)
+
+```
+The null model as the baseline comparison where there is no predictor variables included in the model indicated the mean of Y (the intercept) is -0.473 and it is significant with p,0.001. 
+
+
+
+## Building the model
+overall model 
+```{r}
+
+library(pscl)
+overallmod <- glm(Survived ~ Age+SibSp+Pclass+Parch+Fare+Sex, data = titanic_new01, family = binomial (link = "logit"))
+summary(overallmod)
+pR2(overallmod)
+
+```
+Based on the McFadden test of pR2, the score of is 0.34 which is considered as very good model fit (0.2 -0.4).
+
+
+
+
+# Asses model using cross validation
+
+```{r}
+sample <- sample(c(TRUE, FALSE), nrow(titanic_new01), replace = TRUE, prob = c(0.7,0.3))
+train1 <-titanic_new01[sample, ]
+test1 <- titanic_new01[!sample, ]
+```
+
+#Assessing model fit
+```{r}
+pscl::pR2(overallmod)["McFadden"]
+```
+Pseudo R2 is 0.34 which indicates that the model fits the data very good and has high predictive power.
+
+#Variabel importance
+```{r}
+caret::varImp(overallmod)
+```
+Higher values indicate more importance. These results tell that the most important predictor variabel is Pclass3 and followed by Age, SibSp, Pclass2, and Parch 1. 
+
+#probability optimal
+```{r}
+install.packages("InformationValue", repos = "http://cran.us.r-project.org")
+library(InformationValue)
+```
+
+
+```{r}
+predicted <- predict(overallmod, test1, type = "response")
+optimal <- optimalCutoff(test1$Survived, predicted) [1]
+optimal
+```
+This result show that the optimal probability cutoff to use is 0.61. Thus any passenger with a probability of survival of 0.66 or higher will be predicted to survived, while any passenger with probability less than this number will be predicted to not survived. 
+
+## confussion matrix
+```{r}
+confusionMatrix(test1$Survived, predicted)
+```
+#Calculate sensitivity
+```{r}
+sensitivity(test1$Survived, predicted)
+```
+The test of sensitivity or called as the true positive rate give the result 0.72 or 72%.
+
+#Calculate specificity
+```{r}
+specificity(test1$Survived, predicted)
+```
+# calculate total miscalcuation erorr rate
+```{r}
+misClassError(test1$Survived, predicted, threshold = optimal)
+```
+
+
+Specificity test or also known as the tru negative rate (82%) and the total misclassification rate tell about the percentage of total incorrect classification whic is 16%. 
+
+#Plot ROC (Receiver Operating Characteristic) Curve
+```{r}
+plotROC(test1$Survived, predicted)
+```
+
+The AUC is 0.857 which is quite high and this indicated that the model can predict accurately whether a passenger will survived or not. 
+
+
+# Check the assumptions
+
+##multicoleniarity test
+
+```{r}
+car::vif(overallmod)
+```
+The Vif test for all variables in the overall model indicates that there is no problem of collinarity where al variables have a value of VIF below 5. 
+
+
+#Predict the probability (p) of survival 
+```{r}
+probabilities <- predict(overallmod, type = "response")
+predicted.classes <- ifelse(probabilities > 0.5, "0", "1")
+head(predicted.classes)
+```
+
+
+##Linearity test of independent variables and log-odds
+
+Define continuous variables
+```{r}
+library(dplyr)
+library(tidyr)
+```
+
+
+```{r}
+contvar <- titanic_new01 %>%
+  dplyr::select_if(is.numeric)
+predictors <-colnames(contvar)
+
+contvar <- contvar %>%
+  mutate(logit = log(probabilities/(1-probabilities)))%>%
+  gather(key = "predictors", value = "predictor.value", -logit)
+ggplot(contvar, aes(logit, predictor.value))+
+  geom_point(size = 0.5, alpha = 0.5) +
+  geom_smooth(method = "loess") +
+  theme_bw()+
+  facet_wrap(~ predictors, scales = "free_y")
+```
+The smoothed scatter plot show that continuous variables (Age and Fare) are not linearly associated with the survival outcome in logit scale. 
+
+
+## influential values
+Cook's distance value
+```{r}
+plot(overallmod, which = 4, id.n = 3)
+```
+Cook's distance plot shows that passenger number 26, 262 and 298 as outliers in the model.
+The interpretation of cook's distance is any point over 4/n (n is the number of observations) indicate as a potential outlier, or above D value is above 1. 
+
+## cleaning the outliers
+
+```{r}
+titanic_clean <- titanic_new01[c(-26, -737, -886),]
+overallmod_clean <- glm(Survived ~ Age+SibSp+Pclass+Parch+Fare+Sex+Embarked, data = titanic_clean, family = binomial (link = "logit"))
+summary(overallmod_clean)
+```
+
+
+```{r}
+library(pscl)
+pR2(overallmod_clean)
+
+```
+
+
+# Compare the models
+
+
+# 1: survival of the titanic passanger is contributed by sumber of parents and children
+
+```{r}
+model1 <- glm(Survived ~ Parch, data = titanic_clean, family = binomial)
+summary(model1)
+```
+The model1 regression shows that all independent variables significantly predict the survival of the passenger. 
+
+#Model 2: Survival of the titanic passenger is contributed by Age, number of sibling or spouse, Passenger Class and fare
+
+```{r}
+model2 <- glm(Survived ~ Age+SibSp+Pclass+Parch+Fare, data = titanic_clean, family = binomial)
+summary(model2)
+
+```
+The model2 regression shows that all independent variables significantly predict the survival of the passenger. 
+
+#Model 3: Survival of the titanic passenger is contributed by Age, Number of parents and children, Number of sibling or spouse, Passenger Class and Fare
+
+```{r}
+model3 <- glm(Survived ~ Age+SibSp+Pclass+Fare, data = titanic_clean, family = binomial)
+summary(model3)
+```
+The model3 regression shows that all independent variables significantly predict the survival of the passenger. 
+
+The AIC score for model1 is 1181.1, for model 2 is 1036.3, and for model 3 is 1037.2, therefore the best model is model 2 where the AIC score is the lowest among those 3 models. Model2 is more parsimonious compare to other models.
+
+To further assure the conclusion, I perform the anova test
+```{r}
+anova(model1, model2, test = "LR")
+```
+The result of anova test indicated that there is a significance difference between model1 and model2 with p<0.001, and the model2 is better because it has lesser residual devience (1022.3)
+
+```{r}
+anova(model2, model3, test = "LR")
+```
+The result of anova test indicated that there is no a significance difference between model2 and model3 with p>0.05.
+
+```{r}
+anova(model1, model3, test = "LR")
+```
+The result of anova test indicated that there is a significance difference between model1 and model3 with p<0.001, and the model3 is better because it has lesser residual devience (1025.3)
+
+Based on the AIC score and anova test among model, it is decided that the best model is model 2 with predictors are Age, number of sibling or spouse, Passenger Class and fare. 
+
+
+
+# Calculate odds ratio and confidence interval
+
+```{r}
+exp(model2$coefficients[-1])
+
+```
+
+# Report the results
+Result is derived from the model2 with the logistic equation model :
+
+Y = 1.26 + (-3,26 * Age) + (-3.05 * Sibsp) + (-6.23 * Pclass2)+ (-1.65 *Pclass3)+(6.39 * Fare)
+
+Conclusions: 
+- The passengers of class 2 odds ration of being survival are lower by a factor of 5.36 than odds ration of passenger from class 1 of being survival,    as well as passenger from class 3 odds ratio of being survival is lower by 1.91 than odds ration class 1.
+- For a one unit increase in age, the odds of being survival is lower by a factor of 3.26.
+- For one unit increase in number of sibling or spouse in the ship, the odds of being survival is lower by a factor of 5.36.
+- For one unit increase in fare, the odds of being survival is increase by a factor of 6.39. 
+
+
+```{r}
+(exp(model2$coefficients[-1])-1)*100
+```
+
+Conclusions: 
+- The passengers of class 2 odds of being survival are lower by a factor of 46% than odds ration of passenger from class 1 of being survival,    as well as passenger from class 3 odds ratio of being survival is lower by 80% than odds ration class 1.
+- For a one unit increase in age, the odds of being survival is lower by a factor of 3.2%.
+- For one unit increase in number of sibling or spouse in the ship, the odds of being survival is lower by a factor of 26.32%
+- For one unit increase in fare, the odds of being survival is increase by a factor of 0.64%.
+
+Discussion:
+Based on the analysis of the model by logistic regression, it can be surmised that the existence od spouse or sibling will increase the likelihood to be survived. 
+
+
+© 2022 GitHub, Inc.
+Terms
+Privacy
+Security
+St
